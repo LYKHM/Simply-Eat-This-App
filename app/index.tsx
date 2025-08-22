@@ -1,89 +1,57 @@
-import { StyleSheet } from 'react-native';
+// app/index.tsx
 import { useEffect, useState } from 'react';
-import * as SplashScreen from 'expo-splash-screen';
-import { router } from 'expo-router';
+import { View, Image } from 'react-native';
 import { Redirect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Image } from 'expo-image'; 
+import { Asset } from 'expo-asset';
 import { useAuth } from '@clerk/clerk-expo';
-import SPLASH_IMAGE from '../assets/SplashIcon.png';
 
 
-SplashScreen.preventAutoHideAsync();
+import SPLASH_IMAGE from '../assets/images/SplashIcon.png';
 
-const USE_SPLAH_IMAGE = SPLASH_IMAGE;
-// Match your app.json -> splash.backgroundColor
-const SPLASH_BG = '#ffffff'; // What is this color?
+// Match app.json -> { "splash": { "backgroundColor": "<this hex>" } }
+const SPLASH_BG = '#ffffff';
 
-const Index = () => {
-  //const navState = useRootNavigationState(); // I dont think i need this
-
+export default function Index() {
   const { isLoaded: clerkLoaded, isSignedIn } = useAuth();
+
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
-  //console.log("main index: hasSeenOnboarding State:", hasSeenOnboarding)
+  const [imgReady, setImgReady] = useState(false);
 
-    SplashScreen.setOptions({
-    duration: 1100,
-    fade: true,
-  });
-  
+  // Preload the splash image to avoid flicker
   useEffect(() => {
-      async function prepare() {
-        try {
-          // Artificially delay for two seconds to simulate a slow loading
-          // experience. Remove this if you copy and paste the code!
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          SplashScreen.hide();
-          console.log("main index: remove the splashscreen after 3s")
-        } catch (e) {
-          console.warn(e);
-        } 
-      }
-      prepare();
-    }, []);
-  
-
-  useEffect(() => {
-    const checkHasUserSeenOnboarding = async () => {
-     // console.log("main index: check of the user has seen onboarding")
-      try {
-        const value = await AsyncStorage.getItem('hasSeenOnboarding'); // This has to be async storage
-        console.log("main index: The hasSeenOnboarding value is:", value)
-        setHasSeenOnboarding(value === 'true');
-      } catch (error) {
-        console.error('Error checking onboarding status:', error);
-        setHasSeenOnboarding(false); // Fallback to onboarding on error
-      }
-      //finally{
-      //  await SecureStore.deleteItemAsync('hasSeenOnboarding');
-      //  console.log("main index: temporary remove the hasSeenOnboarding")
-   //  }
-    };
-    checkHasUserSeenOnboarding();
+    Asset.fromModule(SPLASH_IMAGE).downloadAsync().finally(() => setImgReady(true));
   }, []);
 
+  // Read onboarding flag
   useEffect(() => {
-    if (hasSeenOnboarding === null) return;
-    if (hasSeenOnboarding) {
-    //  console.log('main index: the user has seen onboarding, go to paywall/sign-in page');
-      router.replace('/auth'); // Should this be router.replace or redirect? 
-    } else {
-    //  console.log('main index: the user has not seen onboarding');
-      router.replace('/auth/onboarding');
-    }
-  }, [hasSeenOnboarding]);
+    (async () => {
+      try {
+        const v = await AsyncStorage.getItem('hasSeenOnboarding');
+        setHasSeenOnboarding(v === 'true');
+      } catch {
+        setHasSeenOnboarding(false);
+      }
+    })();
+  }, []);
 
+  const ready = clerkLoaded && hasSeenOnboarding !== null && imgReady;
 
-
-  // Return null until onboarding status is known to keep splash screen visible
-  if (hasSeenOnboarding === null) {
-    return null;
+  // In-app splash (identical to native)
+  if (!ready) {
+    return (
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: SPLASH_BG }}>
+        <Image
+          source={SPLASH_IMAGE}
+          className="w-3/5 h-2/5"
+          resizeMode="contain"
+        />
+      </View>
+    );
   }
 
-  // No UI needed, as navigation happens via router.replace
-  return null;
-};
-
-export default Index;
-
-const styles = StyleSheet.create({});
+  // Routing decisions
+  if (!hasSeenOnboarding) return <Redirect href="/onboarding" />;
+  if (isSignedIn) return <Redirect href="/(tabs)" />;
+  return <Redirect href="/" />;
+}

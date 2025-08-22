@@ -1,6 +1,5 @@
 
-/*
-//import SocialLoginButton from "../../components/SocialLogInButton";
+
 import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
@@ -9,9 +8,8 @@ import React from "react";
 import { Link } from "expo-router";
 import { useRouter } from 'expo-router'
 import { useSignIn, useAuth, useUser } from '@clerk/clerk-expo'
+import SocialLogInButton from "../../components/SocialLogInButton";
 
-//import RevenueCatUI  from "react-native-purchases-ui";
-//import Purchases from 'react-native-purchases';
 
 
 export const useWarmUpBrowser = () => {
@@ -24,47 +22,21 @@ export const useWarmUpBrowser = () => {
 };
 WebBrowser.maybeCompleteAuthSession();
 
+
+
 const AuthScreen = () => {
 
   const {isSignedIn} = useAuth();
 
-  const [showPaywall, setShowPaywall] = useState<boolean>(true);
- // console.log("auth/index: showPaywall:", showPaywall)
-   
- /*
-  const getCustomerInfo = async () => {
-    try {
-      const customerInfo = await Purchases.getCustomerInfo();
-      
-     // console.log("auth/index: customerInfo:", customerInfo);
-      
-      // Check if the entitlement exists in the active entitlements
-      if (customerInfo.entitlements.active['pro']) {
-        setShowPaywall(false);
-        // Grant "Ultimate Exculsive Pro" access
-      //  console.log("auth/index: Pro access granted");
-
-        //Go to home page if the user has the entitlements
-      } else {
-        // No active entitlement; deny access
-      //  console.log("auth/index: Pro access denied");
-        setShowPaywall(true);
-      }
-    } catch (e) {
-      console.error("Error fetching customer info:", e);
-    }
-  }
-  
-  
-  useEffect(() => {
-     getCustomerInfo()
-  }, []); // Make sure this runs first!
+ 
+ 
+ 
  
   useWarmUpBrowser();
 
-  const insets = useSafeAreaInsets();
-  const { getToken } = useAuth();
-  const { user } = useUser()
+  const insets = useSafeAreaInsets(); // What is this?
+  const { getToken } = useAuth();  // This is for auto log in later
+  const { user } = useUser()  
 
   const { signIn, setActive, isLoaded } = useSignIn()
   const router = useRouter()
@@ -77,14 +49,14 @@ const AuthScreen = () => {
      useEffect(() => {
     //  console.log("auth/index: useEffect. isSignedIn:", isSignedIn);
     //  console.log("auth/index: useEffect. showPaywall:", showPaywall);
-      if (isSignedIn && !showPaywall) {
+      if (isSignedIn) {
      //   console.log("auth/index: Run useEffect with isSignedIn");
-        router.replace('/(tabs)');
+        router.replace('/(tabs)'); //
       }
-  }, [isSignedIn, showPaywall]);
+  }, [isSignedIn]);
 
   
-  const onSignInPress = async () => {
+  const onSignInPress = React.useCallback(async () => {
     if(!isLoaded) return
 
  
@@ -99,7 +71,8 @@ const AuthScreen = () => {
       if (signInAttempt.status === 'complete') {
         await setActive({ session: signInAttempt.createdSessionId })
 
-        router.replace('/(tabs)') // Fixed the route
+        router.replace('/(tabs)')
+       // router.replace('/(tabs)/eat_this') // Oh is this the problem???
       } else {
         
         console.error(JSON.stringify(signInAttempt, null, 2))
@@ -113,32 +86,16 @@ const AuthScreen = () => {
       console.error(JSON.stringify(err, null, 2))
     }
   }
-};
+}, [isLoaded, emailAddress, password]);
 
   return (
 
-    <>
-    {showPaywall === true && (
-      <RevenueCatUI.Paywall
-      onPurchaseStarted={() => console.log("Purchase started")}
-      onPurchaseCompleted={() => {
-       // console.log("Purchase completed");
-        setShowPaywall(false);
-       // console.log("Check the state after purchase:", showPaywall);
-      }}
-      onRestoreStarted={() => console.log("Restore started")}
-    />
-   )}
-
-
-
-{!showPaywall && (
     <KeyboardAvoidingView
       style={[
         styles.container,
       ]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 5 : 0} 
+      keyboardVerticalOffset={Platform.OS === "ios" ? 5 : 0} // What about android+
     >
       <ScrollView
         contentContainerStyle={styles.container}
@@ -159,9 +116,9 @@ const AuthScreen = () => {
           </View>
 
           <View style={styles.socialButtonsContainer}>
-            {/*<SocialLoginButton strategy="facebook" /> 
-            <SocialLoginButton strategy="google" />
-            <SocialLoginButton strategy="apple" />
+            {/*<SocialLogInButton strategy="facebook" /> */}
+            <SocialLogInButton strategy="google" />
+            <SocialLogInButton strategy="apple" />
           </View>
 
           <View style={styles.dividerContainer}>
@@ -195,12 +152,10 @@ const AuthScreen = () => {
           
             <View style={styles.pressButton}>
               <Text style={styles.pressButtonText}>Don't have an account?</Text>
-              <Link href="/auth/sign-up" style={styles.pressButtonText2}>Sign Up</Link>
+              <Link href={"/sign-up" as any} style={styles.pressButtonText2}>Sign Up</Link>
             </View>
       </ScrollView>
     </KeyboardAvoidingView>
-   )}
-  </>
   ); 
 };
 
@@ -306,5 +261,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 })
-
-*/

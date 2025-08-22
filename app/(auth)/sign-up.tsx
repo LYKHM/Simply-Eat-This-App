@@ -1,44 +1,338 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { ClerkLoaded, SignedIn, SignedOut, useOAuth } from '@clerk/clerk-expo';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable, Text } from 'react-native';
 
-async function doOAuth(strategy: 'oauth_google' | 'oauth_apple') {
-  const { startOAuthFlow } = useOAuth({ strategy });
-  const { createdSessionId, setActive } = await startOAuthFlow();
-  if (createdSessionId) {
-    await setActive?.({ session: createdSessionId });
+import { StyleSheet, Text, View, Image, TextInput, Button, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React from "react";
+import { Link } from "expo-router";
+import { useSignUp, useAuth, useUser } from '@clerk/clerk-expo'
+import { useRouter } from 'expo-router'
+//import { createSupabaseClient  } from "../../lib/supabaseClient"; // I use mysql now.
+import { Alert } from "react-native";
+import SocialLogInButton from "../../components/SocialLogInButton";
+
+
+export default function SignUpScreen ()  {
+  const insets = useSafeAreaInsets(); //What is this?
+
+  const { isLoaded, signUp, setActive } = useSignUp()
+  const router = useRouter()
+  const { getToken } = useAuth(); // I need this for mysql
+  const { user } = useUser(); // same here
+
+  const [emailAddress, setEmailAddress] = React.useState('')
+  const [password, setPassword] = React.useState('')
+  const [pendingVerification, setPendingVerification] = React.useState(false)
+  const [code, setCode] = React.useState('')
+
+  
+  const resendVerification = async () => {
+    if(!signUp || !isLoaded ) return;
+      try{
+      //  console.log("signUp create...")
+        
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+      //console.log("prepare email verify adress...")
+      setPendingVerification(true)
+    }catch(err){
+      console.log("Failed to send verification code", err)
+      return;
+    }
   }
-}
+  
+  const onSignUpPress = async () =>{
+  //  console.log("enterned onSignUpPress")
+    if(!isLoaded) return
+  
+    try{
+    //  console.log("signUp create...")
+      await signUp.create({
+        emailAddress,
+        password,
+      })
 
-export default function SignOut() {
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+      //  console.log("prepare email verify adress...")
+
+      // Set 'pendingVerification' to true to display second form
+      // and capture OTP code
+      setPendingVerification(true)
+    } catch(err){
+      // See https://clerk.com/docs/custom-flows/error-handling
+      // for more info on error handling
+      Alert.alert(
+        "Sign Up Error",
+        "There was an issue with the email or password. Please try again.",
+        [{ text: "OK" }]
+      );
+      console.error(JSON.stringify(err, null, 2))
+    }
+  }
+
+  const onVerifyPress = async () => {
+ //   console.log("Enterned onVerifyPress...")
+    if (!isLoaded) return
+ 
+    try {
+      // Use the code the user provided to attempt verification
+      const signUpAttempt = await signUp.attemptEmailAddressVerification({
+        code,
+      })
+
+      // If verification was completed, set the session to active
+      // and redirect the user
+      if (signUpAttempt.status === 'complete') {
+        await setActive({ session: signUpAttempt.createdSessionId })
+      //  console.log("Enterned verification code...")
+      //  console.log("✅ Session set, now getting token...");
+
+      /*
+        const supabaseToken = await getToken({ template: "supabase" }); // I need this for mysql
+      //  console.log("Sucessfully grabbed Supabase Token", supabaseToken);
+          if(!supabaseToken){
+            console.warn("Failed to retrieve Supabase token")
+            return;
+          }
+
+        const supabase = createSupabaseClient(supabaseToken);
+    //    console.log("Sucessfully created supabaseclient:", JSON.stringify(signUpAttempt, null, 2));
+        if(!supabase){
+          console.warn("Failed to create Supabase Client")
+          return;
+        }
+
+      // console.log("signUpAttempt?.id:", signUpAttempt?.createdUserId)
+      // console.log("signUpAttempt?.id:", signUpAttempt?.emailAddress)
+
+       // console.log("Sending User Data to Supabase");
+        // I dont think this works if a user log ins with password and email
+        const { data, error } = await supabase 
+        .from('clerk_users') 
+        .upsert([
+          {
+            user_id: signUpAttempt?.createdUserId, 
+            email: signUpAttempt?.emailAddress,
+            provider: user?.externalAccounts?.[0]?.provider || 'email', 
+            created_at: new Date().toISOString(), 
+          },
+        ]);
+        if (error) {
+          console.error("Failed to send data to Supabase from sign-up.tsx:", error);
+        } else {
+       //   console.log("User Data sent to Supabase:", data);
+        }
+        */
+      
+        router.replace('/(tabs)')
+      } else {
+        console.error(JSON.stringify(signUpAttempt, null, 2))
+      }
+    } catch (err) {
+      
+      console.error(JSON.stringify(err, null, 2))
+    }
+  }
+
+  
+
+
+  if(pendingVerification){
+    return (
+      <View style={styles.verifyContainer}>
+        <Text style={styles.Verifylabel}>Verify your email</Text>
+        <TextInput
+          style={styles.input}
+          value={code}
+          placeholder="Enter your verification code"
+          onChangeText={(code) => setCode(code)}
+        />
+        <Button title="Verify" onPress={onVerifyPress} />
+        <Button title="Resend Verification Code" onPress={resendVerification} />
+      </View>
+    )
+  }
+
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ClerkLoaded>
-        <View style={styles.container}>
-          <SignedOut>
-            <Pressable style={styles.btn} onPress={() => doOAuth('oauth_google')}>
-              <Text style={styles.btnText}>Continue with Google</Text>
-            </Pressable>
-            <Pressable style={styles.btn} onPress={() => doOAuth('oauth_apple')}>
-              <Text style={styles.btnText}>Continue with Apple</Text>
-            </Pressable>
-          </SignedOut>
-          <SignedIn>
-            <Text style={{ fontSize: 16 }}>You are signed in. Close this screen.</Text>
-          </SignedIn>
+    <KeyboardAvoidingView
+      style={[
+        styles.container,
+      ]}
+      behavior={Platform.OS === "ios" ? "padding" : "height"} //What about android?
+      keyboardVerticalOffset={Platform.OS === "ios" ? 5 : 0} 
+      
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        bounces={false} 
+        showsVerticalScrollIndicator={false} 
+        keyboardShouldPersistTaps="handled" 
+             
+      >
+        <View style={styles.logoContainer}> 
+          <Image source={require("../../assets/images/SplashIcon.png")} resizeMode="contain" style={styles.logo} />
         </View>
-      </ClerkLoaded>
-    </SafeAreaView>
+
+        <View style={styles.headingContainer}>
+          <Text style={styles.label}>Sign Up to Lyft One AI</Text>
+          <Text style={styles.description}>
+            You must create an account to access the app
+          </Text>
+        </View>
+
+        <View style={styles.socialButtonsContainer}>
+          
+          <SocialLogInButton strategy="google" />
+          <SocialLogInButton strategy="apple" />
+        </View>
+
+        <View style={styles.dividerContainer}>
+          <View style={styles.line} />
+          <Text style={styles.orText}>or</Text>
+          <View style={styles.line} />
+        </View>
+        
+        <View style={styles.inputContainer}>
+          <Text style={styles.SignIn}>Sign Up</Text>
+          <TextInput
+            style={styles.input}
+            autoCapitalize="none"
+            value={emailAddress}
+            placeholder="Enter email"
+            placeholderTextColor="#888" 
+            onChangeText={(email) => setEmailAddress(email)}
+          />
+          <TextInput
+            style={styles.input}
+            value={password}
+            placeholder="Enter password"
+            placeholderTextColor="#888" 
+            secureTextEntry={true}
+            onChangeText={(password) => setPassword(password)}
+          />
+          <TouchableOpacity style={styles.button} onPress={onSignUpPress}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
+        </View>
+        
+          <View style={styles.pressButton}>
+            <Text style={styles.pressButtonText}>Have an account?</Text>
+            <Link href="/" style={styles.pressButtonText2}>Press Here</Link>
+          </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
-}
+};
+
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, gap: 12 },
-  btn: { backgroundColor: '#111', paddingVertical: 12, borderRadius: 12, paddingHorizontal: 16 },
-  btnText: { color: '#fff', fontWeight: '700' },
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+    padding: 20,
+    justifyContent: "center",
+  },
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  logo: {
+    width: 115,
+    height: 60,
+  },
+  headingContainer: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  label: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  description: {
+    fontSize: 15,
+    color: "gray",
+    textAlign: "center"
+  },
+  socialButtonsContainer: {
+    marginTop: 20,
+    gap: 10,
+  },
+  inputContainer: {
+    backgroundColor: "white", 
+    gap: 12, 
+    padding: 20, 
+    borderRadius: 10, 
+  },
+  input: {
+    backgroundColor: "#f0f0f0", 
+    borderWidth: 1, 
+    borderColor: "#ccc",
+    borderRadius: 10, 
+    height: 45, 
+    paddingHorizontal: 15,
+    fontSize: 16, 
+    color: "black"
+  },
+  SignIn: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "#333",
+    marginBottom: 1,
+    bottom: 10
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20, // Space around the divider
+  },
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#ccc", // Light gray line
+  },
+  orText: {
+    marginHorizontal: 10,
+    fontSize: 16,
+    color: "#666", // Darker gray for text
+    fontWeight: "bold",
+  },
+  pressButton:{
+    
+    justifyContent: "center",
+    alignContent: "center",
+    gap: 4,
+    flexDirection: "row"
+  },
+  pressButtonText:{
+    fontSize: 16
+  },
+  pressButtonText2: {
+    fontSize: 16,
+    fontWeight: "bold"
+  },
+  button: {
+    backgroundColor: "#007bff", // Change this to any color
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "white", // Text color
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  verifyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "white",
+  },
+  Verifylabel: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    paddingBottom: 10
+  }
 });
-
-
-

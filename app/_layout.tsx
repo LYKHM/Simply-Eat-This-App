@@ -24,11 +24,13 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ClerkProvider>
+    <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey || ''}>
        <ClerkLoaded>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
@@ -77,9 +79,4 @@ export default function RootLayout() {
     return null;
   }
 
-  return (
-    <ClerkProvider>
-      <RootLayoutNav />
-    </ClerkProvider>
-  );
 }
