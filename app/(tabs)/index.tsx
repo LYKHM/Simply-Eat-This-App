@@ -149,6 +149,7 @@ export default function HomeScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Meal Plan</Text>
+        <Text className="text-blue-500">This is a test</Text>
         {!plan && (
           <>
             <Pressable style={styles.primaryBtn} onPress={() => setPlan(generateDay())}>

@@ -2,6 +2,7 @@ import { Redirect, router, Stack } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import React, { useEffect, useState } from 'react';
 
+
 export default function AuthRoutesLayout() {
 
   //Do I need isSingedIn inside this file or can I move it to the auth/index??
@@ -29,7 +30,7 @@ export default function AuthRoutesLayout() {
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="sign-up" options={{ gestureEnabled: false, headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ gestureEnabled: false, headerShown: false }} />  
+          <Stack.Screen name="onboarding" options={{ gestureEnabled: false,  fullScreenGestureEnabled: false, headerShown: false }} />  
         </Stack>
       );
     }

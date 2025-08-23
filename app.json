@@ -4,7 +4,7 @@
     "slug": "SimplyEatThis",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/SplashIcon.png",
+    "icon": "./assets/images/SplashIcon.png",
     "scheme": "simplyeatthis",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

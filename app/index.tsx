@@ -7,12 +7,14 @@ import { Asset } from 'expo-asset';
 import { useAuth } from '@clerk/clerk-expo';
 
 
+//Should this have a type?
 import SPLASH_IMAGE from '../assets/images/SplashIcon.png';
 
 // Match app.json -> { "splash": { "backgroundColor": "<this hex>" } }
 const SPLASH_BG = '#ffffff';
 
 export default function Index() {
+  console.log("Inside the main index.tsx");
   const { isLoaded: clerkLoaded, isSignedIn } = useAuth();
 
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
@@ -28,9 +30,11 @@ export default function Index() {
     (async () => {
       try {
         const v = await AsyncStorage.getItem('hasSeenOnboarding');
-        setHasSeenOnboarding(v === 'true');
+        console.log("check if user has seen onboarding", v);
+        setHasSeenOnboarding(v === 'false'); // Change this to false in development
       } catch {
         setHasSeenOnboarding(false);
+        console.log("user has not seen onboarding");
       }
     })();
   }, []);
@@ -41,17 +45,21 @@ export default function Index() {
   if (!ready) {
     return (
       <View className="flex-1 items-center justify-center" style={{ backgroundColor: SPLASH_BG }}>
+          
         <Image
           source={SPLASH_IMAGE}
           className="w-3/5 h-2/5"
           resizeMode="contain"
         />
+         
       </View>
     );
   }
 
   // Routing decisions
   if (!hasSeenOnboarding) return <Redirect href="/onboarding" />;
+  console.log("user has seen onboarding go to /onboarding");
   if (isSignedIn) return <Redirect href="/(tabs)" />;
-  return <Redirect href="/" />;
+  console.log("user is not signed in go to /(tabs");
+  return <Redirect href="/(auth)" />;
 }

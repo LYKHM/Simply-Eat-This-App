@@ -4,10 +4,11 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import 'react-native-reanimated';
+//import 'react-native-reanimated';
 import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo'
 import { tokenCache } from '@clerk/clerk-expo/token-cache'
-import '../global.css';
+
+
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -23,13 +24,18 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+console.log("main _layout: all env vars", process.env);
+console.log("main _layout: publishableKey clerk", publishableKey);
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
+
+
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
+  
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey || ''}>
        <ClerkLoaded>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -56,6 +62,31 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
+
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // Artificially delay for two seconds to simulate a slow loading
+        // experience. Remove this if you copy and paste the code!
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        SplashScreen.hide();
+        console.log("main _layout: remove the splashscreen after 1s")
+      } catch (e) {
+        console.warn(e);
+      } 
+    }
+    prepare();
+  }, []);
+
+
+  return <RootLayoutNav />;
+}
+
+
+
+
+
+  /*
   useEffect(() => {
     if (!loaded) return;
     const t = setTimeout(() => setSplashHold(false), 3000);
@@ -63,13 +94,10 @@ export default function RootLayout() {
     return () => clearTimeout(t);
   }, [loaded]);
 
-  SplashScreen.setOptions({
-    duration: 1000,
-    fade: true,
-  });
   
 
   useEffect(() => {
+    console.log("main _layout: splashHold", splashHold);
     if (loaded && !splashHold) {
       SplashScreen.hideAsync();
     }
@@ -80,3 +108,4 @@ export default function RootLayout() {
   }
 
 }
+*/

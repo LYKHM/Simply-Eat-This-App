@@ -105,7 +105,7 @@ const AuthScreen = () => {
         >
 
           <View style={styles.logoContainer}>
-            <Image source={require("../../assets/icons/splash2.png")} resizeMode="contain" style={styles.logo} />
+            <Image source={require("../../assets/images/SplashIcon.png")} resizeMode="contain" style={styles.logo} />
           </View>
 
           <View style={styles.headingContainer}>
