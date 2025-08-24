@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
+const dotenv = require('dotenv');
+dotenv.config();
 
 const app = express();
 const PORT = 3000;
@@ -24,14 +26,21 @@ const pool = mysql.createPool({
 // Add user to database table
 app.post('/api/users', async (req, res) => {
     try {
-      const { clerk_user_id, email, provider } = req.body;
+      console.log("Inside the api/users endpoint")
+      const { clerk_id, email, provider } = req.body;
+      console.log("clerk_id: ", clerk_id)
+      console.log("email: ", email)
+      console.log("provider: ", provider)
       
       const connection = pool.getConnection();
+      console.log("Database connection successful");
+
       const [result] = await connection.execute(
         'INSERT INTO users (clerk_id, email, provider, created_at) VALUES (?, ?, ?, NOW())',
-        [clerk_user_id, email, provider, email]
+        [clerk_id, email, provider]
       );
       connection.release();
+      console.log("User created successfully:", result);
       
       res.status(201).json({ success: true, user_id: result.insertId });
     } catch (error) {

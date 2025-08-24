@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as AuthSession from 'expo-auth-session'
  
  
@@ -32,6 +32,7 @@ const SocialLoginButton = ({
   const { startSSOFlow } = useSSO(); 
   const { user, isLoaded  } = useUser();
   const [isLoading, setIsLoading] = useState(false);
+  
 
   const router = useRouter();
   const buttonText = () => {
@@ -57,36 +58,28 @@ const SocialLoginButton = ({
       return <Ionicons name="logo-apple" size={24} color="black" />;
     }
   };
-
+  
+  useEffect(() => {
+    if (user && isLoaded) {
+      // User is now available, sync with database
+      syncUserWithDatabase();
+    }
+  }, [user, isLoaded]);
+ 
 
   const onSocialLoginPress = React.useCallback(async () => {
     try {
       setIsLoading(true);
 
-      /*
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: 'LyftOneAi',
-        path: 'sso-callback'
-      });
-      console.log("redirectUri:", redirectUri);
-      */
       const { createdSessionId, setActive } = await startSSOFlow({
-        strategy: getStrategy(),
-       // redirectUrl: redirectUri This is deprecated
-       // redirectUrl: Linking.createURL("../../(tabs)/home", { scheme: "myapp" }), //non existent page. 
-       // This has to be the reason why the screen is black
+        strategy: getStrategy(), //Initiates the OAuth flow with Google or Apple
       });
-      //console.log("onSocialLoginPress")
-
+    
       // If sign in was successful, set the active session
       if (createdSessionId) {
         //console.log("Session created", createdSessionId);
         setActive!({ session: createdSessionId });
-        await user?.reload(); // This will ensure the latest data
-        //console.log("user:", user) if I need to see
-
-        await syncUserWithDatabase();
-
+        
 
       } else {
         // Use signIn or signUp returned from startOAuthFlow
@@ -102,9 +95,10 @@ const SocialLoginButton = ({
   }, []);
 
 
-
+ 
 
   const syncUserWithDatabase = async () => {
+    console.log("Syncing user with database")
     try {
       const response = await fetch('http://localhost:3000/api/users', {
         method: 'POST',
@@ -125,7 +119,7 @@ const SocialLoginButton = ({
       const data = await response.json();
       console.log('User synced with database:', data);
     } catch (error) {
-      console.error('Error syncing user:', error);
+      console.error('Error syncing user, backend problem:', error);
     }
   };
 

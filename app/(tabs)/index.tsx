@@ -5,6 +5,9 @@ import DonutChart from '@/components/DonutChart';
 import MealCard, { MealItem } from '@/components/MealCard';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSignIn, useAuth, useUser } from '@clerk/clerk-expo'
+
+
 function SwipeRow({ children, onDelete }: { children: React.ReactNode; onDelete: () => void }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const maxLeft = -76;
@@ -97,7 +100,8 @@ export default function HomeScreen() {
   }
   */
 
-
+  const { user  } = useUser();
+  //console.log("Do i have the suer data in the home screen? user: ", user)
   const [plan, setPlan] = useState<MealPlan | null>(null);
   const [macroLimits, setMacroLimits] = useState({
     calories: 0,
