@@ -11,7 +11,7 @@ import {
 import React, { useState } from "react";
 import * as AuthSession from 'expo-auth-session'
  
-
+ 
 const SocialLoginButton = ({
   strategy,
 }: {
@@ -83,6 +83,9 @@ const SocialLoginButton = ({
         //console.log("Session created", createdSessionId);
         setActive!({ session: createdSessionId });
         await user?.reload(); // This will ensure the latest data
+        //console.log("user:", user) if I need to see
+
+        await syncUserWithDatabase();
 
 
       } else {
@@ -97,6 +100,36 @@ const SocialLoginButton = ({
       setIsLoading(false);
     }
   }, []);
+
+
+
+
+  const syncUserWithDatabase = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clerk_id: user?.id,
+          email: user?.emailAddresses[0]?.emailAddress,
+          provider: strategy === 'google' ? 'google' : strategy === 'apple' ? 'apple' : 'email'
+        })
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to sync user with database');
+      }
+  
+      const data = await response.json();
+      console.log('User synced with database:', data);
+    } catch (error) {
+      console.error('Error syncing user:', error);
+    }
+  };
+
+
 
   return (
     <TouchableOpacity

@@ -1,12 +1,16 @@
-import React, { useMemo, useState, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useEffect,useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Animated, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DonutChart from '@/components/DonutChart';
 import MealCard, { MealItem } from '@/components/MealCard';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 function SwipeRow({ children, onDelete }: { children: React.ReactNode; onDelete: () => void }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const maxLeft = -76;
+
+
+
 
   const panResponder = useRef(
     PanResponder.create({
@@ -46,14 +50,10 @@ type MealPlan = {
   dinner: MealItem[];
 };
 
-const MACRO_LIMITS = {
-  calories: 2300,
-  protein: 150,
-  carbs: 270,
-  fat: 65,
-};
 
 function generateRandomMeal(idSeed: string): MealItem {
+
+  //Dummy data for now
   const foods = [
     { name: 'Lemon, Berry, Honey Smoothie', image: 'https://images.unsplash.com/photo-1542444459-db63c9f546a1?q=80&w=400&auto=format&fit=crop' },
     { name: 'Cauliflower Egg Bake', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=400&auto=format&fit=crop' },
@@ -84,7 +84,45 @@ function generateDay(): MealPlan {
 }
 
 export default function HomeScreen() {
+
+  //Sneak peak into the data.
+  /*
+  const lookAtData = async () => {
+    const userDataString = await AsyncStorage.getItem("userData");
+    const userData = userDataString ? JSON.parse(userDataString) : null;
+    const nutritionDataString = await AsyncStorage.getItem("nutritionData");
+    const nutritionData = nutritionDataString ? JSON.parse(nutritionDataString) : null;
+    console.log("userData", userData);
+    console.log("nutritionData", nutritionData);
+  }
+  */
+
+
   const [plan, setPlan] = useState<MealPlan | null>(null);
+  const [macroLimits, setMacroLimits] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+  });
+
+
+    // Load user's nutrition data on component mount
+    useEffect(() => {
+      const loadUserData = async () => {
+        const nutritionDataString = await AsyncStorage.getItem("nutritionData");
+        if (nutritionDataString) {
+          const nutritionData = JSON.parse(nutritionDataString);
+          setMacroLimits({
+            calories: nutritionData.calories,
+            protein: nutritionData.protein,
+            carbs: nutritionData.carbs,
+            fat: nutritionData.fat,
+          });
+        }
+      };
+      loadUserData();
+    }, []);
 
   const totals = useMemo(() => {
     const items = plan ? [...plan.breakfast, ...plan.lunch, ...plan.dinner] : [];
@@ -117,39 +155,40 @@ export default function HomeScreen() {
     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.heroCard}>
-          <DonutChart value={totals.calories} total={MACRO_LIMITS.calories} size={116}>
+          <DonutChart value={totals.calories} total={macroLimits.calories} size={120}  color="#3e89ec" backgroundColor="rgba(62, 137, 236, 0.3)"  >
             <MaterialCommunityIcons name="fire" size={25} color="#111" />
-            <Text style={styles.heroValue}>{Math.max(0, MACRO_LIMITS.calories - totals.calories)}</Text>
+            <Text style={styles.heroValue}>{Math.max(0, macroLimits.calories - totals.calories)}</Text>
             <Text style={styles.heroSubtitle}>Calories Left</Text>
           </DonutChart>
         </View>
 
         <View style={styles.metricsRow}>
           <View style={[styles.metricCard, { borderColor: '#d7e3ff' }] }>
-            <DonutChart value={totals.protein} total={MACRO_LIMITS.protein} size={92} color="#4e8df5">
+            <DonutChart value={totals.protein} total={macroLimits.protein} size={92} color="#eaec76"  backgroundColor="rgba(234, 236, 118, 0.3)" >
               <MaterialCommunityIcons name="food-steak" size={18} color="#111" />
-              <Text style={styles.metricValue}>{Math.max(0, MACRO_LIMITS.protein - totals.protein)}g</Text>
+              <Text style={styles.metricValue}>{Math.max(0, macroLimits.protein - totals.protein)}g</Text>
               <Text style={styles.metricLabel}>Protein Left</Text>
             </DonutChart>
           </View>
           <View style={[styles.metricCard, { borderColor: '#e8f5d6' }] }>
-            <DonutChart value={totals.carbs} total={MACRO_LIMITS.carbs} size={92} color="#7bcc5a">
-              <MaterialCommunityIcons name="leaf" size={18} color="#111" />
-              <Text style={styles.metricValue}>{Math.max(0, MACRO_LIMITS.carbs - totals.carbs)}g</Text>
+            <DonutChart value={totals.carbs} total={macroLimits.carbs} size={92}  color="#30db1d"  backgroundColor="rgba(48, 219, 29, 0.3)">
+              <MaterialCommunityIcons name="bread-slice" size={18} color="#111" />
+              <Text style={styles.metricValue}>{Math.max(0, macroLimits.carbs - totals.carbs)}g</Text>
               <Text style={styles.metricLabel}>Carbs Left</Text>
             </DonutChart>
           </View>
           <View style={[styles.metricCard, { borderColor: '#f7f5d9' }] }>
-            <DonutChart value={totals.fat} total={MACRO_LIMITS.fat} size={92} color="#f5d14e">
-              <MaterialCommunityIcons name="water" size={18} color="#111" />
-              <Text style={styles.metricValue}>{Math.max(0, MACRO_LIMITS.fat - totals.fat)}g</Text>
+            <DonutChart value={totals.fat} total={macroLimits.fat} size={92} color="#f5d14e">
+              <MaterialCommunityIcons name="bottle-wine" size={18} color="#111" />
+              <Text style={styles.metricValue}>{Math.max(0, macroLimits.fat - totals.fat)}g</Text>
               <Text style={styles.metricLabel}>Fat Left</Text>
             </DonutChart>
           </View>
         </View>
 
         <Text style={styles.sectionTitle}>Meal Plan</Text>
-        <Text className="text-blue-500">This is a test</Text>
+
+       
         {!plan && (
           <>
             <Pressable style={styles.primaryBtn} onPress={() => setPlan(generateDay())}>
@@ -195,17 +234,21 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 16 },
   heroCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 20,
     paddingVertical: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e6e6e6',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 8,
+    backdropFilter: 'blur(10px)',
   },
   heroValue: { fontSize: 25, fontWeight: '800', marginTop: 4 },
   heroSubtitle: { fontSize: 12, color: '#666' },
@@ -216,11 +259,20 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 20,
     alignItems: 'center',
     paddingVertical: 10,
-    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 8,
+    backdropFilter: 'blur(10px)',
   },
   metricValue: { fontSize: 16, fontWeight: '800', marginTop: 2 },
   metricLabel: { fontSize: 9, color: '#666' },

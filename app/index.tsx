@@ -31,7 +31,7 @@ export default function Index() {
       try {
         const v = await AsyncStorage.getItem('hasSeenOnboarding');
         console.log("check if user has seen onboarding", v);
-        setHasSeenOnboarding(v === 'false'); // Change this to false in development
+        setHasSeenOnboarding(v === 'true'); 
       } catch {
         setHasSeenOnboarding(false);
         console.log("user has not seen onboarding");

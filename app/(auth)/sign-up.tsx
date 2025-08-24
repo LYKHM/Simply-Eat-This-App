@@ -37,7 +37,7 @@ export default function SignUpScreen ()  {
       return;
     }
   }
-  
+   
   const onSignUpPress = async () =>{
   //  console.log("enterned onSignUpPress")
     if(!isLoaded) return
@@ -50,7 +50,7 @@ export default function SignUpScreen ()  {
       })
 
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
-      //  console.log("prepare email verify adress...")
+      // console.log("prepare email verify adress...")
 
       // Set 'pendingVerification' to true to display second form
       // and capture OTP code
@@ -84,42 +84,15 @@ export default function SignUpScreen ()  {
       //  console.log("Enterned verification code...")
       //  console.log("✅ Session set, now getting token...");
 
-      /*
-        const supabaseToken = await getToken({ template: "supabase" }); // I need this for mysql
-      //  console.log("Sucessfully grabbed Supabase Token", supabaseToken);
-          if(!supabaseToken){
-            console.warn("Failed to retrieve Supabase token")
-            return;
-          }
 
-        const supabase = createSupabaseClient(supabaseToken);
-    //    console.log("Sucessfully created supabaseclient:", JSON.stringify(signUpAttempt, null, 2));
-        if(!supabase){
-          console.warn("Failed to create Supabase Client")
-          return;
-        }
 
-      // console.log("signUpAttempt?.id:", signUpAttempt?.createdUserId)
-      // console.log("signUpAttempt?.id:", signUpAttempt?.emailAddress)
+      console.log("What is inside signUpAttempt", signUpAttempt)
+      await syncUserWithDatabase(signUpAttempt);
+      // Does signUpAttemt contain the correct data?
 
-       // console.log("Sending User Data to Supabase");
-        // I dont think this works if a user log ins with password and email
-        const { data, error } = await supabase 
-        .from('clerk_users') 
-        .upsert([
-          {
-            user_id: signUpAttempt?.createdUserId, 
-            email: signUpAttempt?.emailAddress,
-            provider: user?.externalAccounts?.[0]?.provider || 'email', 
-            created_at: new Date().toISOString(), 
-          },
-        ]);
-        if (error) {
-          console.error("Failed to send data to Supabase from sign-up.tsx:", error);
-        } else {
-       //   console.log("User Data sent to Supabase:", data);
-        }
-        */
+      // use clerk_id: user?.id,
+      // use email: user?.emailAddresses[0]?.emailAddress,
+
       
         router.replace('/(tabs)')
       } else {
@@ -130,6 +103,31 @@ export default function SignUpScreen ()  {
       console.error(JSON.stringify(err, null, 2))
     }
   }
+
+  const syncUserWithDatabase = async (signUpAttempt: any) => {
+    try {
+      const response = await fetch('http://localhost:3000/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clerk_id: signUpAttempt.createdUserId, // is this correct?
+          email: signUpAttempt.emailAddress, // is this correct?
+          provider: 'email'
+        })
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to sync user with database');
+      }
+  
+      const data = await response.json();
+      console.log('User synced with database:', data);
+    } catch (error) {
+      console.error('Error syncing user:', error);
+    }
+  };
 
   
 

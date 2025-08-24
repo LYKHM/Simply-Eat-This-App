@@ -25,8 +25,6 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
-console.log("main _layout: all env vars", process.env);
-console.log("main _layout: publishableKey clerk", publishableKey);
 
 
 
@@ -40,8 +38,8 @@ function RootLayoutNav() {
        <ClerkLoaded>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false  }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false, gestureEnabled: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack>
         </ThemeProvider>
@@ -70,7 +68,7 @@ export default function RootLayout() {
         // experience. Remove this if you copy and paste the code!
         await new Promise(resolve => setTimeout(resolve, 1000));
         SplashScreen.hide();
-        console.log("main _layout: remove the splashscreen after 1s")
+      //  console.log("main _layout: remove the splashscreen after 1s")
       } catch (e) {
         console.warn(e);
       } 

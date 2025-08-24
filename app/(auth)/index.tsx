@@ -74,7 +74,6 @@ const AuthScreen = () => {
         router.replace('/(tabs)')
        // router.replace('/(tabs)/eat_this') // Oh is this the problem???
       } else {
-        
         console.error(JSON.stringify(signInAttempt, null, 2))
       }
     } catch (err) {
@@ -89,7 +88,7 @@ const AuthScreen = () => {
 }, [isLoaded, emailAddress, password]);
 
   return (
-
+ 
     <KeyboardAvoidingView
       style={[
         styles.container,

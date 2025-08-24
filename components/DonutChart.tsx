@@ -16,7 +16,7 @@ export default function DonutChart({
   value,
   total,
   size = 120,
-  thickness = 8,
+  thickness = 6,
   color = '#4e8df5',
   backgroundColor = '#e6e6e6',
   children,

@@ -32,7 +32,7 @@ const Onboarding = () => {
     const calculatedData = calculateNutrition(userData);
     await AsyncStorage.setItem("userData", JSON.stringify(userData));
     await AsyncStorage.setItem("nutritionData", JSON.stringify(calculatedData));
-    await AsyncStorage.setItem("hasSeenOnboarding", "false"); // Set this as false when developing
+    await AsyncStorage.setItem("hasSeenOnboarding", "true"); // Set this as false when developing
     router.push("/");
   };
 
@@ -53,7 +53,7 @@ const Onboarding = () => {
     const activityMultipliers = {
       sedentary: 1.2,
       lightly: 1.375,
-      moderate: 1.55,
+      moderate: 1.65,
       very: 1.725,
       extremely: 1.9
     };
@@ -84,6 +84,10 @@ const Onboarding = () => {
   const calculateTimeToGoal = () => {
     const currentWeight = parseFloat(userData.weight);
     const targetWeight = parseFloat(userData.targetWeight);
+  
+    // Return 0 if weights are not valid numbers
+    if (isNaN(currentWeight) || isNaN(targetWeight)) return 0;
+
     const difference = Math.abs(currentWeight - targetWeight);
     
     if (userData.goal === 'maintain') return 0;
@@ -248,7 +252,7 @@ const Onboarding = () => {
       {userData.goal !== 'maintain' && userData.weight && userData.targetWeight && (
         <View style={styles.timeEstimate}>
           <Text style={styles.timeEstimateText}>
-            Estimated time to goal: {calculateTimeToGoal()} weeks
+            Estimated time to goal: {String(calculateTimeToGoal())} weeks
           </Text>
         </View>
       )}
@@ -264,18 +268,22 @@ const Onboarding = () => {
         <View style={styles.graphBar}>
           <View style={styles.graphBarFill} />
           <Text style={styles.graphLabel}>Without Plan</Text>
-          <Text style={styles.graphValue}>{calculateTimeToGoal() * 1.7} weeks</Text> {/* TODO: Add weeks with no plan */}
+          <Text style={styles.graphValue}>
+            {userData.goal === 'maintain' ? '0 weeks' :  `${String(calculateTimeToGoal() * 1.7)} weeks`}
+            </Text>
         </View>
         
         <View style={styles.graphBar}>
-          <View style={[styles.graphBarFill, styles.graphBarFillAccelerated]} />
+         <View style={[
+          styles.graphBarFillWithPlan, styles.graphBarFillAccelerated,
+          ]} />
           <Text style={styles.graphLabel}>With Plan</Text>
-          <Text style={styles.graphValue}>{calculateTimeToGoal()} weeks</Text>
+          <Text style={styles.graphValue}>{userData.goal === 'maintain' ? '0 weeks' : `${String(calculateTimeToGoal())} weeks`}</Text>
         </View>
       </View>
       
       <Text style={styles.accelerationText}>
-        🚀 You'll reach your goal {Math.round(12 - calculateTimeToGoal())} weeks faster!
+      🚀 You'll reach your goal {userData.goal === 'maintain' ? '0' : Math.round((calculateTimeToGoal() * 1.7) - calculateTimeToGoal())} weeks faster!
       </Text>
     </View>
   );
@@ -323,9 +331,10 @@ const Onboarding = () => {
       <Text style={styles.subtitle}>Choose your dietary approach</Text>
       
       {[
-        { key: 'anything', label: 'Anything Goes', desc: 'No restrictions' },
-        { key: 'keto', label: 'Keto', desc: 'Low-carb, high-fat' },
-        { key: 'vegan', label: 'Vegan', desc: 'Plant-based only' }
+        { key: 'anything', label: 'Anything Goes', desc: 'Most Popular' },
+        { key: 'keto', label: 'Keto', desc: 'Burn Fat Faster' },
+        { key: 'vegan', label: 'Vegan', desc: 'Plant-based only' },
+        { key: 'paleo', label: 'Paleo', desc: 'Popular Among Athletes' }
       ].map((diet) => (
         <TouchableOpacity 
           key={diet.key}
@@ -647,10 +656,18 @@ const styles = StyleSheet.create({
   },
   graphBar: {
     alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   graphBarFill: {
     width: 60,
     height: 120,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  graphBarFillWithPlan:{
+    width: 60,
+    height: 120 * 0.5,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 8,
     marginBottom: 8,
