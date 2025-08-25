@@ -98,9 +98,19 @@ const SocialLoginButton = ({
  
 
   const syncUserWithDatabase = async () => {
-    console.log("Syncing user with database")
+    console.log("=== Starting user sync ===");
+    console.log("API Base URL:", process.env.EXPO_PUBLIC_API_BASE);
+    console.log("Full URL:", `${process.env.EXPO_PUBLIC_API_BASE}/api/users`);
+    console.log("User data:", {
+      clerk_id: user?.id,
+      email: user?.emailAddresses[0]?.emailAddress,
+      provider: strategy === 'google' ? 'google' : strategy === 'apple' ? 'apple' : 'email'
+    });
+
+
     try {
-      const response = await fetch('http://localhost:3000/api/users', {
+      console.log("Making fetch request...");
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,13 +121,18 @@ const SocialLoginButton = ({
           provider: strategy === 'google' ? 'google' : strategy === 'apple' ? 'apple' : 'email'
         })
       });
+
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
   
       if (!response.ok) {
-        throw new Error('Failed to sync user with database');
+        const errorText = await response.text();
+        console.error("Response not OK. Status:", response.status, "Body:", errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
   
       const data = await response.json();
-      console.log('User synced with database:', data);
+      console.log('✅ User synced successfully:', data);
     } catch (error) {
       console.error('Error syncing user, backend problem:', error);
     }
