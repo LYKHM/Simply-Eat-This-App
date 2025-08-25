@@ -95,22 +95,12 @@ const SocialLoginButton = ({
   }, []);
 
 
- 
+ // Am I missng the http for the process.env.EXPO_PUBLIC_API_BASE?
 
   const syncUserWithDatabase = async () => {
-    console.log("=== Starting user sync ===");
-    console.log("API Base URL:", process.env.EXPO_PUBLIC_API_BASE);
-    console.log("Full URL:", `${process.env.EXPO_PUBLIC_API_BASE}/api/users`);
-    console.log("User data:", {
-      clerk_id: user?.id,
-      email: user?.emailAddresses[0]?.emailAddress,
-      provider: strategy === 'google' ? 'google' : strategy === 'apple' ? 'apple' : 'email'
-    });
-
-
+    console.log("Syncing user with database")
     try {
-      console.log("Making fetch request...");
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/users`, {
+      const response = await fetch('(`${process.env.EXPO_PUBLIC_API_BASE}/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -54,8 +54,11 @@ jspm_packages/
 # OS generated files
 .DS_Store
 .DS_Store?
+<<<<<<< HEAD
 ._*
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+=======
+>>>>>>> 731f4af28b70776bef6833657d5df845f99a5fa3
 Thumbs.db
