@@ -100,7 +100,7 @@ const SocialLoginButton = ({
   const syncUserWithDatabase = async () => {
     console.log("Syncing user with database")
     try {
-      const response = await fetch('http://localhost:3000/api/users', {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

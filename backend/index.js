@@ -26,21 +26,32 @@ const pool = mysql.createPool({
 // Add user to database table
 app.post('/api/users', async (req, res) => {
     try {
-      console.log("Inside the api/users endpoint")
       const { clerk_id, email, provider } = req.body;
-      console.log("clerk_id: ", clerk_id)
-      console.log("email: ", email)
-      console.log("provider: ", provider)
-      
-      const connection = pool.getConnection();
-      console.log("Database connection successful");
+      const connection = await pool.promise().getConnection();
+
+      // Check if user already exists
+    const [existing] = await connection.execute(
+      'SELECT id FROM clerk_user WHERE clerk_id = ?',
+      [clerk_id]
+    );
+    
+    if (existing.length > 0) {
+      connection.release();
+      return res.status(200).json({ 
+        success: true, 
+        user_id: existing[0].id,
+        message: 'User already exists' 
+      });
+    }
+    
+
+
 
       const [result] = await connection.execute(
-        'INSERT INTO users (clerk_id, email, provider, created_at) VALUES (?, ?, ?, NOW())',
+        'INSERT INTO clerk_user (clerk_id, email, provider, created_at) VALUES (?, ?, ?, NOW())',
         [clerk_id, email, provider]
       );
       connection.release();
-      console.log("User created successfully:", result);
       
       res.status(201).json({ success: true, user_id: result.insertId });
     } catch (error) {
@@ -55,9 +66,9 @@ app.get('/api/users/:clerk_id', async (req, res) => {
     try {
       const { clerk_id } = req.params;
       
-      const connection = pool.getConnection();
+      const connection = await pool.promise().getConnection();
       const [rows] = await connection.execute(
-        'SELECT * FROM users WHERE clerk_id = ?',
+        'SELECT * FROM clerk_user WHERE clerk_id = ?',
         [clerk_id]
       );
       connection.release();
