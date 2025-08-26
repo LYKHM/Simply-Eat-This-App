@@ -95,12 +95,10 @@ const SocialLoginButton = ({
   }, []);
 
 
- // Am I missng the http for the process.env.EXPO_PUBLIC_API_BASE?
-
   const syncUserWithDatabase = async () => {
-    console.log("Syncing user with database")
+   
     try {
-      const response = await fetch('(`${process.env.EXPO_PUBLIC_API_BASE}/api/users', {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,8 +110,7 @@ const SocialLoginButton = ({
         })
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", response.headers);
+    
   
       if (!response.ok) {
         const errorText = await response.text();

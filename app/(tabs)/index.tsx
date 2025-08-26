@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect,useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Animated, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Animated, PanResponder, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DonutChart from '@/components/DonutChart';
 import MealCard, { MealItem } from '@/components/MealCard';
@@ -155,6 +155,53 @@ export default function HomeScreen() {
     </View>
   );
 
+
+  const tempGenerate = async () => {
+    console.log("Temp generating meal plan pressed");
+    if (!user) return;
+    
+    try {
+
+      console.log("�� Making API request to:", `${process.env.EXPO_PUBLIC_API_BASE}/api/data`);
+      console.log("�� Request payload:", {
+      ChosenDiet: "keto",
+      ChosenCalories: 2800,
+      ChosenTime: 10,
+      ChosenMeals: 10,
+      clerk_id: user.id
+      });
+
+
+      console.log("Generating meal plan for user:", user.id);
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ChosenDiet: "keto",   //Hardcoded for now
+          ChosenCalories: 2800,
+          ChosenTime: 10,
+          ChosenMeals: 3,
+          clerk_id: user.id // This will save the meal plan to the database
+        }),
+      });
+      
+      if (response.ok) {
+        const mealPlan = await response.json();
+        console.log("✅ Meal plan received:", mealPlan);
+        console.log("🍽️ Number of meal groups:", mealPlan.meals?.length);
+        // The meal plan is now saved to the database and returned
+        setPlan(mealPlan);
+      }
+    } catch (error) {
+      console.error('Error generating meal plan:', error);
+      
+    }
+  };
+
+
+
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -191,6 +238,10 @@ export default function HomeScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Meal Plan</Text>
+
+        <TouchableOpacity onPress={() => {tempGenerate()}}>
+          <Text>Temp generate daily food log for db</Text>
+        </TouchableOpacity>
 
        
         {!plan && (

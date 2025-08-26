@@ -93,37 +93,55 @@ export default function SignUpScreen ()  {
       // use clerk_id: user?.id,
       // use email: user?.emailAddresses[0]?.emailAddress,
 
-      
+        //console.log("Replacing router to /(tabs)")
         router.replace('/(tabs)')
       } else {
         console.error(JSON.stringify(signUpAttempt, null, 2))
       }
     } catch (err) {
-      
       console.error(JSON.stringify(err, null, 2))
+      //Inform the user that the verification code is incorrect
+      Alert.alert(
+        "Verification Failed",
+        "The verification code is incorrect. Please check your email and try again, or request a new code.",
+        [{ text: "OK" }]
+      );      
     }
   }
 
   const syncUserWithDatabase = async (signUpAttempt: any) => {
+    
     try {
-      const response = await fetch('http://localhost:3000/api/users', {
+      //console.log("=== Starting manual signup sync ===");
+      //console.log("API Base URL:", process.env.EXPO_PUBLIC_API_BASE);
+      //console.log("Signup data:", {
+      //clerk_id: signUpAttempt.createdUserId,
+      //email: signUpAttempt.emailAddress,
+      //provider: 'email'
+    //});
+
+
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          clerk_id: signUpAttempt.createdUserId, // is this correct?
-          email: signUpAttempt.emailAddress, // is this correct?
+          clerk_id: signUpAttempt.createdUserId, // is this correct? yes it was
+          email: signUpAttempt.emailAddress, // is this correct? yes it was
           provider: 'email'
         })
       });
+
+      //console.log("Response status:", response.status);
+      //console.log("Response headers:", response.headers);
   
       if (!response.ok) {
         throw new Error('Failed to sync user with database');
       }
   
       const data = await response.json();
-      console.log('User synced with database:', data);
+    //  console.log('User synced with database:', data);
     } catch (error) {
       console.error('Error syncing user:', error);
     }
