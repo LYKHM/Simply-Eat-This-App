@@ -10,6 +10,7 @@ import { tokenCache } from '@clerk/clerk-expo/token-cache'
 
 
 
+
 import { useColorScheme } from '@/components/useColorScheme';
 
 export {
@@ -37,11 +38,12 @@ function RootLayoutNav() {
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey || ''}>
        <ClerkLoaded>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false  }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false, gestureEnabled: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          </Stack>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false  }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false, gestureEnabled: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="RecipePage" options={{ headerShown: false }} />
+            </Stack>
         </ThemeProvider>
       </ClerkLoaded>
     </ClerkProvider>

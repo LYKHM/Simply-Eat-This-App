@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
+
 interface MealProps {
   foodDiet: string;
   groupIndex: number;
@@ -19,6 +21,7 @@ interface MealProps {
   recipeObj: any;
   TargetCalories: number;
   time: number;
+  clerk_id: string;
 }
 
 const Meal: React.FC<MealProps> = ({ 
@@ -35,12 +38,15 @@ const Meal: React.FC<MealProps> = ({
   recipeId, 
   recipeObj, 
   TargetCalories, 
-  time 
+  time,
+  clerk_id
 }) => {
   const [spinning, setSpinning] = useState(false);
   const [newRecipe, setNewRecipe] = useState(false);
   const [refreshedRecipe, setRefreshedRecipe] = useState<any>(null);
   const router = useRouter();
+  
+  
 
   useEffect(() => {
     const loadSavedRecipe = async () => {
@@ -63,13 +69,18 @@ const Meal: React.FC<MealProps> = ({
     setSpinning(true);
 
     try {
+
+   
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           diet: foodDiet,
           time: time,
-          targetCalories: TargetCalories
+          targetCalories: TargetCalories,
+          clerk_id: clerk_id,
+          groupIndex: groupIndex,
+          mealIndex: mealIndex
         })
       });
 
@@ -111,22 +122,37 @@ const Meal: React.FC<MealProps> = ({
   };
 
   const handleRecipePress = () => {
+    
+    // I need these 3 variables to be passed to the recipe page
+
+ 
+ 
     const recipeData = newRecipe ? refreshedRecipe : recipeObj;
     const servings = newRecipe ? refreshedRecipe.servings : foodServings;
     const id = newRecipe ? refreshedRecipe.id : recipeId;
-    
-    // Navigate to recipe detail screen
+
+    // Set the recipe data in context
+    //Remove all context
     /*
-    router.push({
-      pathname: '/recipe/[id]', // Add react router to this
-      params: { 
-        id: id.toString(),
-        recipe: JSON.stringify(recipeData),
-        servings: servings.toString()
-      }
+    setCurrentRecipe({
+      id: id.toString(),
+      recipe: recipeData,
+      servings
     });
     */
-  };
+
+ 
+    router.push({
+      pathname: '/RecipePage', 
+      params: { 
+        id: id.toString(),
+        recipe: JSON.stringify(recipeData),  // This does NOT conver the object to a string
+        servings: servings.toString()         // Convert to string
+      }
+    });
+
+  }
+  
   
 
   const displayTitle = newRecipe 
@@ -155,25 +181,25 @@ const Meal: React.FC<MealProps> = ({
             </TouchableOpacity>
             
             <Text style={styles.calories}>
-              Calories: {newRecipe ? refreshedRecipe.calories : foodCalories}
+              Calories: {newRecipe ? refreshedRecipe.scaledCalories : foodCalories}
             </Text>
 
             <View style={styles.macrosGrid}>
               <View style={styles.macroItem}>
                 <Text style={styles.macroText}>
-                  Protein: {newRecipe ? refreshedRecipe.protein : foodProtein}
+                  Protein: {newRecipe ? refreshedRecipe.scaledProtein : foodProtein}
                 </Text>
               </View>
 
               <View style={styles.macroItem}>
                 <Text style={styles.macroText}>
-                  Carb: {newRecipe ? refreshedRecipe.carbs : foodCarbs}
+                  Carb: {newRecipe ? refreshedRecipe.scaledCarbs : foodCarbs}
                 </Text>
               </View>
 
               <View style={styles.macroItem}>
                 <Text style={styles.macroText}>
-                  Fat: {newRecipe ? refreshedRecipe.fat : foodFat}
+                  Fat: {newRecipe ? refreshedRecipe.scaledFat : foodFat}
                 </Text>
               </View>
 

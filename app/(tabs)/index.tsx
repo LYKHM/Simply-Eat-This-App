@@ -6,6 +6,7 @@ import MealCard, { MealItem } from '@/components/MealCard';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSignIn, useAuth, useUser } from '@clerk/clerk-expo'
+import Meal from '@/components/Meal';
 
 
 function SwipeRow({ children, onDelete }: { children: React.ReactNode; onDelete: () => void }) {
@@ -48,10 +49,31 @@ function SwipeRow({ children, onDelete }: { children: React.ReactNode; onDelete:
 
 
 type MealPlan = {
-  breakfast: MealItem[];
-  lunch: MealItem[];
-  dinner: MealItem[];
+  meals: Array<{
+    label: string;
+    labelCalories: number;
+    diet: string;
+    meals: Array<{
+      recipeId: number;
+      image: string;
+      name: string;
+      scaledCalories: number;
+      scaledProtein: number;
+      scaledCarbs: number;
+      scaledFat: number;
+      servings: number;
+      diet: string;
+    }>;
+  }>;
+  TARGET_PER_MEAL: number;
+  totalDailyCalories: number;
+  totalDailyProtein: number;
+  totalDailyCarbs: number;
+  totalDailyFat: number;
 };
+
+
+
 
 
 function generateRandomMeal(idSeed: string): MealItem {
@@ -78,17 +100,10 @@ function generateRandomMeal(idSeed: string): MealItem {
   };
 }
 
-function generateDay(): MealPlan {
-  return {
-    breakfast: [generateRandomMeal('b1'), generateRandomMeal('b2')],
-    lunch: [generateRandomMeal('l1'), generateRandomMeal('l2')],
-    dinner: [generateRandomMeal('d1'), generateRandomMeal('d2')],
-  };
-}
 
 export default function HomeScreen() {
 
-  //Sneak peak into the data.
+  //Sneak peak into the data from the onboarding
   /*
   const lookAtData = async () => {
     const userDataString = await AsyncStorage.getItem("userData");
@@ -102,7 +117,8 @@ export default function HomeScreen() {
 
   const { user  } = useUser();
   //console.log("Do i have the suer data in the home screen? user: ", user)
-  const [plan, setPlan] = useState<MealPlan | null>(null);
+  const [mealPlanData, setMealPlanData] = useState<MealPlan | null>(null);
+  const [time, setTime] = useState(20);
   const [macroLimits, setMacroLimits] = useState({
     calories: 0,
     protein: 0,
@@ -112,6 +128,7 @@ export default function HomeScreen() {
 
 
     // Load user's nutrition data on component mount
+    // I need to load the users nutrition data from the database.
     useEffect(() => {
       const loadUserData = async () => {
         const nutritionDataString = await AsyncStorage.getItem("nutritionData");
@@ -128,15 +145,15 @@ export default function HomeScreen() {
       loadUserData();
     }, []);
 
-  const totals = useMemo(() => {
-    const items = plan ? [...plan.breakfast, ...plan.lunch, ...plan.dinner] : [];
-    const protein = items.reduce((sum, m) => sum += m.macros.protein, 0);
-    const carbs = items.reduce((sum, m) => sum += m.macros.carbs, 0);
-    const fat = items.reduce((sum, m) => sum += m.macros.fat, 0);
-    const calories = items.reduce((sum, m) => sum += m.calories, 0);
-    return { protein, carbs, fat, calories };
-  }, [plan]);
+    
+    const totals = {
+      calories: mealPlanData?.totalDailyCalories || 0,
+      protein: mealPlanData?.totalDailyProtein || 0,
+      carbs: mealPlanData?.totalDailyCarbs || 0,
+      fat: mealPlanData?.totalDailyFat || 0,
+    };
 
+  /*
   const removeMeal = useCallback((section: keyof MealPlan, id: string) => {
     setPlan((prev) => {
       if (!prev) return prev;
@@ -146,6 +163,7 @@ export default function HomeScreen() {
       };
     });
   }, []);
+  */
 
   const renderRightActions = (onDelete: () => void) => (
     <View style={styles.swipeBehind}>
@@ -155,31 +173,39 @@ export default function HomeScreen() {
     </View>
   );
 
+  // The refresh function
+  const getMealByRecipeId = (recipeId: any) => {
+    if (!mealPlanData || !mealPlanData.meals) return null;
+  
+    for (const group of mealPlanData.meals) {
+      const found = group.meals.find((meal) => meal.recipeId === recipeId);
+      if (found) {
+        return {
+          ...found,
+          label: group.label,
+          labelCalories: group.labelCalories,
+          eventDiet: group.diet
+        };
+      }
+    }
+  
+    return null;
+  };
 
-  const tempGenerate = async () => {
-    console.log("Temp generating meal plan pressed");
+
+  const GenerateDailyMealPlan = async () => {
+   
     if (!user) return;
     
     try {
 
-      console.log("�� Making API request to:", `${process.env.EXPO_PUBLIC_API_BASE}/api/data`);
-      console.log("�� Request payload:", {
-      ChosenDiet: "keto",
-      ChosenCalories: 2800,
-      ChosenTime: 10,
-      ChosenMeals: 10,
-      clerk_id: user.id
-      });
-
-
-      console.log("Generating meal plan for user:", user.id);
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/data`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ChosenDiet: "keto",   //Hardcoded for now
+          ChosenDiet: "Keto",   //Hardcoded for now
           ChosenCalories: 2800,
           ChosenTime: 10,
           ChosenMeals: 3,
@@ -189,16 +215,43 @@ export default function HomeScreen() {
       
       if (response.ok) {
         const mealPlan = await response.json();
-        console.log("✅ Meal plan received:", mealPlan);
-        console.log("🍽️ Number of meal groups:", mealPlan.meals?.length);
+        
         // The meal plan is now saved to the database and returned
-        setPlan(mealPlan);
+        setMealPlanData(mealPlan);
       }
     } catch (error) {
       console.error('Error generating meal plan:', error);
-      
     }
   };
+
+ 
+
+  useEffect(() => {
+    const loadDailyMealPlan = async () => {
+      if (!user) return;
+  
+      try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/daily-recipes/${user.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+  
+        if (response.ok) {
+          const theUsersDailyMealPlan = await response.json();
+          //console.log("✅ Daily meal plan loaded:", theUsersDailyMealPlan);
+          setMealPlanData(theUsersDailyMealPlan);
+        } else {
+          console.error('Failed to load daily meal plan:', response.status);
+        }
+      } catch (error) {
+        console.error('Error loading daily meal plan:', error);
+      }
+    };
+  
+    loadDailyMealPlan();
+  }, [user?.id]);
 
 
 
@@ -239,44 +292,52 @@ export default function HomeScreen() {
 
         <Text style={styles.sectionTitle}>Meal Plan</Text>
 
-        <TouchableOpacity onPress={() => {tempGenerate()}}>
+        <TouchableOpacity onPress={() => {GenerateDailyMealPlan()}}>
           <Text>Temp generate daily food log for db</Text>
         </TouchableOpacity>
 
        
-        {!plan && (
+        {(!mealPlanData || !mealPlanData.meals || mealPlanData.meals.length === 0) && (
           <>
-            <Pressable style={styles.primaryBtn} onPress={() => setPlan(generateDay())}>
+            <Pressable style={styles.primaryBtn} onPress={GenerateDailyMealPlan}>
               <Text style={styles.primaryBtnText}>Generate Day</Text>
             </Pressable>
-            <Pressable style={styles.secondaryBtn} onPress={() => setPlan((prev) => (prev ? { ...prev } : prev))}>
+          
+            <Pressable style={styles.secondaryBtn} onPress={GenerateDailyMealPlan}>
               <Text style={styles.secondaryBtnText}>Copy Yesterday</Text>
             </Pressable>
+           
           </>
         )}
 
-        {plan && (
-          <View style={styles.planSection}>
-            <Text style={styles.mealHeading}>Breakfast</Text>
-            {plan.breakfast.map((m) => (
-              <SwipeRow key={m.id} onDelete={() => removeMeal('breakfast', m.id)}>
-                <MealCard item={m} />
-              </SwipeRow>
-            ))}
-            <Text style={styles.mealHeading}>Lunch</Text>
-            {plan.lunch.map((m) => (
-              <SwipeRow key={m.id} onDelete={() => removeMeal('lunch', m.id)}>
-                <MealCard item={m} />
-              </SwipeRow>
-            ))}
-            <Text style={styles.mealHeading}>Dinner</Text>
-            {plan.dinner.map((m) => (
-              <SwipeRow key={m.id} onDelete={() => removeMeal('dinner', m.id)}>
-                <MealCard item={m} />
-              </SwipeRow>
+        {mealPlanData?.meals.map((group, i) => (
+          <View key={i} style={styles.planSection}>
+            <Text style={styles.mealHeading}>
+              {group.label}: {group.labelCalories.toFixed()} kcal
+            </Text>
+            {group.meals.map((meal, j) => (
+              <Meal
+                key={meal.recipeId}
+                groupIndex={i}
+                mealIndex={j}
+                recipeId={meal.recipeId}
+                recipeObj={getMealByRecipeId(meal.recipeId)}
+                foodImage={meal.image}
+                foodTitle={meal.name}
+                foodCalories={meal.scaledCalories}
+                foodProtein={meal.scaledProtein}
+                foodCarbs={meal.scaledCarbs}
+                foodFat={meal.scaledFat}
+                foodServings={meal.servings}
+                TargetCalories={mealPlanData?.TARGET_PER_MEAL}
+                foodDiet={meal.diet}
+                time={time}
+                clerk_id={user?.id || ''}
+              />
             ))}
           </View>
-        )}
+        ))}
+
       </ScrollView>
 
       <Pressable style={styles.fab} onPress={() => { /* future action */ }}>
