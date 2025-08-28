@@ -3,8 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-
+import * as Haptics from 'expo-haptics';
 
 interface MealProps {
   foodDiet: string;
@@ -22,6 +21,8 @@ interface MealProps {
   TargetCalories: number;
   time: number;
   clerk_id: string;
+  isChecked: boolean;
+  onToggle: (groupIndex: number, mealIndex: number, isChecked: boolean) => void;
 }
 
 const Meal: React.FC<MealProps> = ({ 
@@ -39,14 +40,14 @@ const Meal: React.FC<MealProps> = ({
   recipeObj, 
   TargetCalories, 
   time,
-  clerk_id
+  clerk_id,
+  isChecked,
+  onToggle
 }) => {
   const [spinning, setSpinning] = useState(false);
   const [newRecipe, setNewRecipe] = useState(false);
   const [refreshedRecipe, setRefreshedRecipe] = useState<any>(null);
   const router = useRouter();
-  
-  
 
   useEffect(() => {
     const loadSavedRecipe = async () => {
@@ -69,8 +70,6 @@ const Meal: React.FC<MealProps> = ({
     setSpinning(true);
 
     try {
-
-   
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,9 +107,6 @@ const Meal: React.FC<MealProps> = ({
 
       await AsyncStorage.setItem("freshRecipe", JSON.stringify(replacement));
 
-      // Analytics equivalent for React Native would go here
-      // You could use Firebase Analytics or similar
-
     } catch (error) {
       console.error('Error refreshing recipe:', error);
       Alert.alert('Error', 'Failed to refresh recipe');
@@ -122,38 +118,24 @@ const Meal: React.FC<MealProps> = ({
   };
 
   const handleRecipePress = () => {
-    
-    // I need these 3 variables to be passed to the recipe page
-
- 
- 
     const recipeData = newRecipe ? refreshedRecipe : recipeObj;
     const servings = newRecipe ? refreshedRecipe.servings : foodServings;
     const id = newRecipe ? refreshedRecipe.id : recipeId;
 
-    // Set the recipe data in context
-    //Remove all context
-    /*
-    setCurrentRecipe({
-      id: id.toString(),
-      recipe: recipeData,
-      servings
-    });
-    */
-
- 
     router.push({
       pathname: '/RecipePage', 
       params: { 
         id: id.toString(),
-        recipe: JSON.stringify(recipeData),  // This does NOT conver the object to a string
-        servings: servings.toString()         // Convert to string
+        recipe: JSON.stringify(recipeData),
+        servings: servings.toString()
       }
     });
-
   }
-  
-  
+
+  const handleCheckmarkToggle = () => {
+    onToggle(groupIndex, mealIndex, !isChecked);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+  };
 
   const displayTitle = newRecipe 
     ? (refreshedRecipe?.name ?? refreshedRecipe?.title ?? foodTitle)
@@ -163,6 +145,19 @@ const Meal: React.FC<MealProps> = ({
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.contentRow}>
+          {/* Checkmark */}
+          <TouchableOpacity
+            style={[
+              styles.checkmark,
+              isChecked && styles.checkmarkChecked
+            ]}
+            onPress={handleCheckmarkToggle}
+          >
+            {isChecked && (
+              <Ionicons name="checkmark" size={16} color="#fff" />
+            )}
+          </TouchableOpacity>
+
           {/* Food Image */}
           <View style={styles.imageContainer}>
             <Image 
@@ -235,8 +230,8 @@ const Meal: React.FC<MealProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingTop: 8,
-    marginBottom: 20,
+    paddingTop: 4,
+    marginBottom: 12,
   },
   card: {
     width: '100%',
@@ -247,21 +242,37 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    marginHorizontal: 16,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    marginHorizontal: 8,
   },
   contentRow: {
     flexDirection: 'row',
-    padding: 12,
+    padding: 8,
+    alignItems: 'center',
+  },
+  checkmark: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    marginRight: 12,
+  },
+  checkmarkChecked: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#2563eb',
   },
   imageContainer: {
-    width: 128,
-    height: 128,
-    borderRadius: 12,
+    width: 100,
+    height: 100,
+    borderRadius: 8,
     overflow: 'hidden',
     flexShrink: 0,
   },
@@ -271,7 +282,7 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 8,
     justifyContent: 'center',
   },
   title: {

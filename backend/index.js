@@ -903,7 +903,7 @@ app.post('/api/recipes', async (req, res) => {
         takeIngredientId
       );
       
-      
+       
       
       // Step 1: Build a map of ingredient_id -> name
       const theIngredientNameMap = {};
@@ -979,6 +979,166 @@ app.post('/api/recipes', async (req, res) => {
 })
 
   
+// Daily Performance Tracking Endpoints
+
+// Create daily performance record
+app.post('/api/daily-performance', async (req, res) => {
+  console.log("Hit the daily performance endpoint");
+  try {
+    const { clerk_id, date, total_calories, total_protein, total_carbs, total_fat } = req.body;
+    
+    if (!clerk_id || !date || total_calories === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const connection = await pool.getConnection();
+    
+    // Check if record already exists for this user and date
+    const [existing] = await connection.execute(
+      'SELECT id FROM daily_performance WHERE clerk_id = ? AND date = ?',
+      [clerk_id, date]
+    );
+
+    if (existing.length > 0) {
+      // Update existing record
+      await connection.execute(
+        'UPDATE daily_performance SET total_calories = ?, total_protein = ?, total_carbs = ?, total_fat = ?, updated_at = NOW() WHERE clerk_id = ? AND date = ?',
+        [total_calories, total_protein || 0, total_carbs || 0, total_fat || 0, clerk_id, date]
+      );
+    } else {
+      // Create new record
+      await connection.execute(
+        'INSERT INTO daily_performance (clerk_id, date, total_calories, total_protein, total_carbs, total_fat, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())',
+        [clerk_id, date, total_calories, total_protein || 0, total_carbs || 0, total_fat || 0]
+      );
+    }
+    
+    connection.release();
+    res.json({ success: true, message: 'Daily performance recorded' });
+  } catch (error) {
+    console.error('Error recording daily performance:', error);
+    res.status(500).json({ error: 'Failed to record daily performance' });
+  }
+});
+
+// Get weekly performance data
+app.get('/api/weekly-performance/:clerk_id', async (req, res) => {
+  try {
+    const { clerk_id } = req.params;
+    const { start_date, end_date } = req.query;
+    
+    if (!start_date || !end_date) {
+      return res.status(400).json({ error: 'Missing start_date or end_date' });
+    }
+
+    const connection = await pool.getConnection();
+    
+    // Get performance data for the date range
+    const [rows] = await connection.execute(
+      `SELECT date, total_calories, total_protein, total_carbs, total_fat 
+       FROM daily_performance 
+       WHERE clerk_id = ? AND date BETWEEN ? AND ?
+       ORDER BY date ASC`,
+      [clerk_id, start_date, end_date]
+    );
+    
+    connection.release();
+    
+    // Create a map of date to calories for easy lookup
+    const performanceMap = {};
+    rows.forEach(row => {
+      performanceMap[row.date] = row.total_calories;
+    });
+    
+    res.json({ 
+      performance_data: performanceMap,
+      raw_data: rows
+    });
+  } catch (error) {
+    console.error('Error fetching weekly performance:', error);
+    res.status(500).json({ error: 'Failed to fetch weekly performance' });
+  }
+});
+
+// Get current week and previous week performance
+app.get('/api/weekly-performance-summary/:clerk_id', async (req, res) => {
+  try {
+    const { clerk_id } = req.params;
+    
+    const connection = await pool.getConnection();
+    
+    // Calculate current week dates (Sunday to Saturday)
+    const today = new Date();
+    const currentWeekStart = new Date(today);
+    currentWeekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+    
+    const currentWeekEnd = new Date(currentWeekStart);
+    currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // End of week (Saturday)
+    
+    // Calculate previous week dates
+    const previousWeekStart = new Date(currentWeekStart);
+    previousWeekStart.setDate(currentWeekStart.getDate() - 7);
+    
+    const previousWeekEnd = new Date(previousWeekStart);
+    previousWeekEnd.setDate(previousWeekStart.getDate() + 6);
+    
+    // Format dates for MySQL
+    const formatDate = (date) => date.toISOString().split('T')[0];
+    
+    // Get current week data
+    const [currentWeekRows] = await connection.execute(
+      `SELECT date, total_calories 
+       FROM daily_performance 
+       WHERE clerk_id = ? AND date BETWEEN ? AND ?
+       ORDER BY date ASC`,
+      [clerk_id, formatDate(currentWeekStart), formatDate(currentWeekEnd)]
+    );
+    
+    // Get previous week data
+    const [previousWeekRows] = await connection.execute(
+      `SELECT date, total_calories 
+       FROM daily_performance 
+       WHERE clerk_id = ? AND date BETWEEN ? AND ?
+       ORDER BY date ASC`,
+      [clerk_id, formatDate(previousWeekStart), formatDate(previousWeekEnd)]
+    );
+    
+    connection.release();
+    
+    // Create arrays for each week (7 days)
+    const currentWeekCalories = new Array(7).fill(0);
+    const previousWeekCalories = new Array(7).fill(0);
+    
+    // Fill current week data
+    currentWeekRows.forEach(row => {
+      const dayOfWeek = new Date(row.date).getDay(); // 0 = Sunday, 1 = Monday, etc.
+      currentWeekCalories[dayOfWeek] = row.total_calories;
+    });
+    
+    // Fill previous week data
+    previousWeekRows.forEach(row => {
+      const dayOfWeek = new Date(row.date).getDay(); // 0 = Sunday, 1 = Monday, etc.
+      previousWeekCalories[dayOfWeek] = row.total_calories;
+    });
+    
+    res.json({
+      current_week: currentWeekCalories,
+      previous_week: previousWeekCalories,
+      current_week_dates: {
+        start: formatDate(currentWeekStart),
+        end: formatDate(currentWeekEnd)
+      },
+      previous_week_dates: {
+        start: formatDate(previousWeekStart),
+        end: formatDate(previousWeekEnd)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching weekly performance summary:', error);
+    res.status(500).json({ error: 'Failed to fetch weekly performance summary' });
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

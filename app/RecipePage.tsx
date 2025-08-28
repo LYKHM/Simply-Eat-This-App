@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 
 import {
@@ -50,9 +52,9 @@ interface RecipeData {
 
 
 const RecipePage = () => {
-  console.log('RecipePage loaded');
-  const { id, recipe, servings  } = useLocalSearchParams(); 
 
+  const { id, recipe, servings  } = useLocalSearchParams(); 
+  //const insets = useSafeAreaInsets();
   const scaledRecipe = JSON.parse(recipe as string); 
 
 
@@ -112,7 +114,7 @@ const RecipePage = () => {
   }
 
   const activeData = showScaled ? fetchedRecipeData.scaled : fetchedRecipeData.original;
-  console.log("activeData", activeData);
+  
 
 
   const { protein, carbs, fat } = fetchedRecipeData.original;
@@ -122,142 +124,144 @@ const RecipePage = () => {
   const fatPercent = (fat / total) * 100;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{fetchedRecipeData.original.name}</Text>
-      </View>
-
-      {/* Image and Nutrition Chart */}
-      <View style={styles.imageNutritionContainer}>
-        <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: fetchedRecipeData.original.image }}
-            style={styles.recipeImage}
-            resizeMode="cover"
-          />
+    <SafeAreaView style={styles.container}>
+      <ScrollView  contentContainerStyle={styles.contentContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>{fetchedRecipeData.original.name}</Text>
         </View>
 
-        <View style={styles.nutritionCard}>
-          <Text style={styles.nutritionTitle}>Nutrition Breakdown</Text>
-          
-          {/* Simple percentage display - replace with actual chart if needed */}
-          <View style={styles.percentageContainer}>
-            <View style={styles.percentageItem}>
-              <Text style={styles.percentageLabel}>Protein</Text>
-              <Text style={styles.percentageValue}>{proteinPercent.toFixed(0)}%</Text>
-            </View>
-            <View style={styles.percentageItem}>
-              <Text style={styles.percentageLabel}>Carbs</Text>
-              <Text style={styles.percentageValue}>{carbsPercent.toFixed(0)}%</Text>
-            </View>
-            <View style={styles.percentageItem}>
-              <Text style={styles.percentageLabel}>Fat</Text>
-              <Text style={styles.percentageValue}>{fatPercent.toFixed(0)}%</Text>
+        {/* Image and Nutrition Chart */}
+        <View style={styles.imageNutritionContainer}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: fetchedRecipeData.original.image }}
+              style={styles.recipeImage}
+              resizeMode="cover"
+            />
+          </View>
+
+          <View style={styles.nutritionCard}>
+            <Text style={styles.nutritionTitle}>Nutrition Breakdown</Text>
+            
+            {/* Simple percentage display - replace with actual chart if needed */}
+            <View style={styles.percentageContainer}>
+              <View style={styles.percentageItem}>
+                <Text style={styles.percentageLabel}>Protein</Text>
+                <Text style={styles.percentageValue}>{proteinPercent.toFixed(0)}%</Text>
+              </View>
+              <View style={styles.percentageItem}>
+                <Text style={styles.percentageLabel}>Carbs</Text>
+                <Text style={styles.percentageValue}>{carbsPercent.toFixed(0)}%</Text>
+              </View>
+              <View style={styles.percentageItem}>
+                <Text style={styles.percentageLabel}>Fat</Text>
+                <Text style={styles.percentageValue}>{fatPercent.toFixed(0)}%</Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
 
-      {/* Meta Information */}
-      <View style={styles.metaContainer}>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaText}>Prep: {fetchedRecipeData.original.prep_time} min</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaText}>Cook: {fetchedRecipeData.original.cook_time} min</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaText}>Serves: {fetchedRecipeData.original.makes_x_servings}</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaText}>Health: {fetchedRecipeData.original.Health_Score}/10</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaText}>
-            Allergens: {fetchedRecipeData.original.allergies || 'None listed'}
-          </Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaText}>
-            Price: ${fetchedRecipeData.original.cost || 'N/A'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Toggle Switch */}
-      <View style={styles.toggleContainer}>
-        <Text style={[styles.toggleLabel, !showScaled && styles.activeToggle]}>
-          Original
-        </Text>
-        <TouchableOpacity
-          style={[styles.toggleSwitch, showScaled && styles.toggleSwitchActive]}
-          onPress={() => setShowScaled(!showScaled)}
-        >
-          <View style={[styles.toggleButton, showScaled && styles.toggleButtonActive]} />
-        </TouchableOpacity>
-        <Text style={[styles.toggleLabel, showScaled && styles.activeToggle]}>
-          Scaled to {servings} serving
-        </Text>
-      </View>
-
-      {/* Ingredients and Nutrition */}
-      <View style={styles.detailsContainer}>
-        {/* Ingredients */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Ingredients</Text>
-          {activeData.ingredients.map((ingredient, index) => (
-            <Text key={index} style={styles.ingredientItem}>
-              • {ingredient.name}: {ingredient.quantity.toFixed(0)}{ingredient.unit}
+        {/* Meta Information */}
+        <View style={styles.metaContainer}>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaText}>Prep: {fetchedRecipeData.original.prep_time} min</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaText}>Cook: {fetchedRecipeData.original.cook_time} min</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaText}>Serves: {fetchedRecipeData.original.makes_x_servings}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaText}>Health: {fetchedRecipeData.original.Health_Score}/10</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaText}>
+              Allergens: {fetchedRecipeData.original.allergies || 'None listed'}
             </Text>
-          ))}
+          </View>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaText}>
+              Price: ${fetchedRecipeData.original.cost || 'N/A'}
+            </Text>
+          </View>
         </View>
 
-        {/* Nutrition Facts */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Nutrition Facts</Text>
-          <View style={styles.nutritionTable}>
-            <View style={styles.nutritionRow}>
-              <Text style={styles.nutritionLabel}>Calories</Text>
-              <Text style={styles.nutritionValue}>
-                {showScaled ? fetchedRecipeData.scaled.scaledCalories : fetchedRecipeData.original.calories}
+        {/* Toggle Switch */}
+        <View style={styles.toggleContainer}>
+          <Text style={[styles.toggleLabel, !showScaled && styles.activeToggle]}>
+            Original
+          </Text>
+          <TouchableOpacity
+            style={[styles.toggleSwitch, showScaled && styles.toggleSwitchActive]}
+            onPress={() => setShowScaled(!showScaled)}
+          >
+            <View style={[styles.toggleButton, showScaled && styles.toggleButtonActive]} />
+          </TouchableOpacity>
+          <Text style={[styles.toggleLabel, showScaled && styles.activeToggle]}>
+            Scaled to {servings} serving
+          </Text>
+        </View>
+
+        {/* Ingredients and Nutrition */}
+        <View style={styles.detailsContainer}>
+          {/* Ingredients */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Ingredients</Text>
+            {activeData.ingredients.map((ingredient, index) => (
+              <Text key={index} style={styles.ingredientItem}>
+                • {ingredient.name}: {ingredient.quantity.toFixed(0)}{ingredient.unit}
               </Text>
-            </View>
-            <View style={styles.nutritionRow}>
-              <Text style={styles.nutritionLabel}>Protein</Text>
-              <Text style={styles.nutritionValue}>
-                {showScaled ? fetchedRecipeData.scaled.scaledProtein : fetchedRecipeData.original.protein}g
-              </Text>
-            </View>
-            <View style={styles.nutritionRow}>
-              <Text style={styles.nutritionLabel}>Fat</Text>
-              <Text style={styles.nutritionValue}>
-                {showScaled ? fetchedRecipeData.scaled.scaledFat : fetchedRecipeData.original.fat}g
-              </Text>
-            </View>
-            <View style={styles.nutritionRow}>
-              <Text style={styles.nutritionLabel}>Carbs</Text>
-              <Text style={styles.nutritionValue}>
-                {showScaled ? fetchedRecipeData.scaled.scaledCarbs : fetchedRecipeData.original.carbs}g
-              </Text>
+            ))}
+          </View>
+
+          {/* Nutrition Facts */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Nutrition Facts</Text>
+            <View style={styles.nutritionTable}>
+              <View style={styles.nutritionRow}>
+                <Text style={styles.nutritionLabel}>Calories</Text>
+                <Text style={styles.nutritionValue}>
+                  {showScaled ? fetchedRecipeData.scaled.scaledCalories : fetchedRecipeData.original.calories}
+                </Text>
+              </View>
+              <View style={styles.nutritionRow}>
+                <Text style={styles.nutritionLabel}>Protein</Text>
+                <Text style={styles.nutritionValue}>
+                  {showScaled ? fetchedRecipeData.scaled.scaledProtein : fetchedRecipeData.original.protein}g
+                </Text>
+              </View>
+              <View style={styles.nutritionRow}>
+                <Text style={styles.nutritionLabel}>Fat</Text>
+                <Text style={styles.nutritionValue}>
+                  {showScaled ? fetchedRecipeData.scaled.scaledFat : fetchedRecipeData.original.fat}g
+                </Text>
+              </View>
+              <View style={styles.nutritionRow}>
+                <Text style={styles.nutritionLabel}>Carbs</Text>
+                <Text style={styles.nutritionValue}>
+                  {showScaled ? fetchedRecipeData.scaled.scaledCarbs : fetchedRecipeData.original.carbs}g
+                </Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
 
-      {/* Instructions */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Instructions</Text>
-        <Text style={styles.instructions}>{fetchedRecipeData.original.instructions}</Text>
-      </View>
-    </ScrollView>
+        {/* Instructions */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Instructions</Text>
+          <Text style={styles.instructions}>{fetchedRecipeData.original.instructions}</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F9FAFB'
   },
   contentContainer: {
     padding: 16,
@@ -266,7 +270,7 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   loadingText: {
     marginTop: 16,

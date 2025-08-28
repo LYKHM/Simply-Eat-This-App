@@ -7,12 +7,12 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSignIn, useAuth, useUser } from '@clerk/clerk-expo'
 import Meal from '@/components/Meal';
+import WeeklyPerformance from '@/components/WeeklyPerformance';
 
 
 function SwipeRow({ children, onDelete }: { children: React.ReactNode; onDelete: () => void }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const maxLeft = -76;
-
 
 
 
@@ -72,35 +72,6 @@ type MealPlan = {
   totalDailyFat: number;
 };
 
-
-
-
-
-function generateRandomMeal(idSeed: string): MealItem {
-
-  //Dummy data for now
-  const foods = [
-    { name: 'Lemon, Berry, Honey Smoothie', image: 'https://images.unsplash.com/photo-1542444459-db63c9f546a1?q=80&w=400&auto=format&fit=crop' },
-    { name: 'Cauliflower Egg Bake', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=400&auto=format&fit=crop' },
-    { name: 'Chicken and Avocado Salad', image: 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?q=80&w=400&auto=format&fit=crop' },
-    { name: 'Oats with Blueberries', image: 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?q=80&w=400&auto=format&fit=crop' },
-    { name: 'Greek Yogurt Bowl', image: 'https://images.unsplash.com/photo-1505250469679-203ad9ced0cb?q=80&w=400&auto=format&fit=crop' },
-  ];
-  const pick = foods[Math.floor(Math.random() * foods.length)];
-  const protein = Math.floor(5 + Math.random() * 35);
-  const carbs = Math.floor(10 + Math.random() * 80);
-  const fat = Math.floor(2 + Math.random() * 25);
-  const calories = protein * 4 + carbs * 4 + fat * 9;
-  return {
-    id: `${idSeed}-${Math.random().toString(36).slice(2, 8)}`,
-    name: pick.name,
-    imageUrl: pick.image,
-    calories,
-    macros: { protein, carbs, fat },
-  };
-}
-
-
 export default function HomeScreen() {
 
   //Sneak peak into the data from the onboarding
@@ -119,6 +90,15 @@ export default function HomeScreen() {
   //console.log("Do i have the suer data in the home screen? user: ", user)
   const [mealPlanData, setMealPlanData] = useState<MealPlan | null>(null);
   const [time, setTime] = useState(20);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  // Weekly performance data
+  const [currentWeekCalories, setCurrentWeekCalories] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [previousWeekCalories, setPreviousWeekCalories] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [isLoadingPerformance, setIsLoadingPerformance] = useState(true);
+  
+  // Checkmark state management
+  const [checkedMeals, setCheckedMeals] = useState<boolean[][]>([]);
   const [macroLimits, setMacroLimits] = useState({
     calories: 0,
     protein: 0,
@@ -146,12 +126,30 @@ export default function HomeScreen() {
     }, []);
 
     
-    const totals = {
-      calories: mealPlanData?.totalDailyCalories || 0,
-      protein: mealPlanData?.totalDailyProtein || 0,
-      carbs: mealPlanData?.totalDailyCarbs || 0,
-      fat: mealPlanData?.totalDailyFat || 0,
-    };
+    // Calculate totals only from checked meals
+    const totals = useMemo(() => {
+      const result = {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+      };
+    
+      if (mealPlanData?.meals && checkedMeals.length > 0) {
+        mealPlanData.meals.forEach((group, groupIndex) => {
+          group.meals.forEach((meal, mealIndex) => {
+            if (checkedMeals[groupIndex]?.[mealIndex]) {
+              result.calories += meal.scaledCalories || 0;
+              result.protein += meal.scaledProtein || 0;
+              result.carbs += meal.scaledCarbs || 0;
+              result.fat += meal.scaledFat || 0;
+            }
+          });
+        });
+      }
+    
+      return result;
+    }, [mealPlanData, checkedMeals]); // Recalculate when these change
 
   /*
   const removeMeal = useCallback((section: keyof MealPlan, id: string) => {
@@ -218,9 +216,67 @@ export default function HomeScreen() {
         
         // The meal plan is now saved to the database and returned
         setMealPlanData(mealPlan);
+        
+        // Record daily performance after meal plan is generated
+        await recordDailyPerformance();
       }
     } catch (error) {
       console.error('Error generating meal plan:', error);
+    }
+  };
+
+  // Record daily performance
+  const recordDailyPerformance = async () => {
+    if (!user || !mealPlanData) return;
+    
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      // Calculate totals only from checked meals
+      let totalCalories = 0;
+      let totalProtein = 0;
+      let totalCarbs = 0;
+      let totalFat = 0;
+
+      if (checkedMeals.length > 0) {
+        mealPlanData.meals.forEach((group, groupIndex) => {
+          group.meals.forEach((meal, mealIndex) => {
+            if (checkedMeals[groupIndex]?.[mealIndex]) {
+              totalCalories += meal.scaledCalories || 0;
+              totalProtein += meal.scaledProtein || 0;
+              totalCarbs += meal.scaledCarbs || 0;
+              totalFat += meal.scaledFat || 0;
+            }
+          });
+        });
+      }
+      
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/daily-performance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clerk_id: user.id,
+          date: today,
+          total_calories: totalCalories,
+          total_protein: totalProtein,
+          total_carbs: totalCarbs,
+          total_fat: totalFat,
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh weekly performance data
+        const performanceResponse = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/weekly-performance-summary/${user.id}`);
+        if (response.ok) {
+          const performanceData = await performanceResponse.json();
+          setCurrentWeekCalories(performanceData.current_week);
+          setPreviousWeekCalories(performanceData.previous_week);
+        }
+      }
+    } catch (error) {
+      console.error('Error recording daily performance:', error);
     }
   };
 
@@ -253,16 +309,201 @@ export default function HomeScreen() {
     loadDailyMealPlan();
   }, [user?.id]);
 
+  // Load weekly performance data
+  // Add this later.
+  /*
+  useEffect(() => {
+    const loadWeeklyPerformance = async () => {
+      if (!user) return;
+      
+      setIsLoadingPerformance(true);
+      try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/weekly-performance-summary/${user.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
 
+        if (response.ok) {
+          const performanceData = await response.json();
+          setCurrentWeekCalories(performanceData.current_week);
+          setPreviousWeekCalories(performanceData.previous_week);
+        } else {
+          console.error('Failed to load weekly performance:', response.status);
+        }
+      } catch (error) {
+        console.error('Error loading weekly performance:', error);
+      } finally {
+        setIsLoadingPerformance(false);
+      }
+    };
+
+    loadWeeklyPerformance();
+  }, [user?.id]);
+  */
+
+  // Initialize checkmark state when meal plan data changes
+  useEffect(() => {
+    if (mealPlanData?.meals) {
+      const initialCheckedMeals = mealPlanData.meals.map(group => 
+        group.meals.map(() => false)
+      );
+      setCheckedMeals(initialCheckedMeals);
+    }
+  }, [mealPlanData]);
+
+  // Checkmark toggle function
+  const handleMealToggle = async (groupIndex: number, mealIndex: number, isChecked: boolean) => {
+    const newCheckedMeals = [...checkedMeals];
+    newCheckedMeals[groupIndex] = [...newCheckedMeals[groupIndex]];
+    newCheckedMeals[groupIndex][mealIndex] = isChecked;
+
+    setCheckedMeals(newCheckedMeals);
+
+    // Save to AsyncStorage with daily key
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const key = `checkmarks_${today}`;
+      await AsyncStorage.setItem(key, JSON.stringify(newCheckedMeals));
+    
+      // Clean up old data every x saves
+      const saveCount = await AsyncStorage.getItem('save_count') || '0';
+      const newCount = parseInt(saveCount) + 1;
+      await AsyncStorage.setItem('save_count', newCount.toString());
+
+       // Save totals to MySQL (daily_performance table)
+       // Always save updated totals to MySQL
+      await saveDailyTotalsToMySQL();
+      
+      
+      if (newCount % 10 === 0) {
+        cleanupOldCheckmarks();
+      }
+    } catch (error) {
+      console.error('Error saving checkmarks:', error);
+    }
+  };
+
+  const saveDailyTotalsToMySQL = async () => {
+    console.log("Saving daily totals to MySQL");
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Calculate totals from checked meals
+      let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+      
+      if (checkedMeals.length > 0 && mealPlanData) {
+        mealPlanData.meals.forEach((group, groupIndex) => {
+          group.meals.forEach((meal, mealIndex) => {
+            if (checkedMeals[groupIndex]?.[mealIndex]) {
+              totalCalories += meal.scaledCalories || 0;
+              totalProtein += meal.scaledProtein || 0;
+              totalCarbs += meal.scaledCarbs || 0;
+              totalFat += meal.scaledFat || 0;
+            }
+          });
+        });
+      }
+  
+      // Save to daily_performance table
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/daily-performance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clerk_id: user?.id,
+          date: today,
+          total_calories: totalCalories,
+          total_protein: totalProtein,
+          total_carbs: totalCarbs,
+          total_fat: totalFat,
+        }),
+      });
+  
+      if (response.ok) {
+        console.log('Daily totals updated to MySQL');
+      }
+    } catch (error) {
+      console.error('Error saving daily totals:', error);
+    }
+  };
+
+
+
+  // Cleanup function for old checkmarks
+  const cleanupOldCheckmarks = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const checkmarkKeys = keys.filter(key => key.startsWith('checkmarks_'));
+      
+      // Keep only last 3 days
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      
+      for (const key of checkmarkKeys) {
+        const dateStr = key.replace('checkmarks_', '');
+        const keyDate = new Date(dateStr);
+        
+        if (keyDate < threeDaysAgo) {
+          await AsyncStorage.removeItem(key);
+          console.log(`Cleaned up old checkmarks: ${key}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up checkmarks:', error);
+    }
+  };
+
+  // Load today's checkmarks
+  useEffect(() => {
+    const loadCheckmarks = async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const key = `checkmarks_${today}`;
+        const saved = await AsyncStorage.getItem(key);
+        
+        if (saved) {
+          setCheckedMeals(JSON.parse(saved));
+        } else {
+          // Initialize empty checkmarks for today
+          if (mealPlanData?.meals) {
+            const initialCheckedMeals = mealPlanData.meals.map(group => 
+              group.meals.map(() => false)
+            );
+            setCheckedMeals(initialCheckedMeals);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading checkmarks:', error);
+      }
+    };
+    
+    if (mealPlanData?.meals) {
+      loadCheckmarks();
+    }
+  }, [mealPlanData]);
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <ScrollView contentContainerStyle={styles.container}>
+        <WeeklyPerformance 
+          currentWeekCalories={currentWeekCalories}
+          previousWeekCalories={previousWeekCalories}
+          targetCalories={macroLimits.calories || 2000}
+          isLoading={isLoadingPerformance}
+        />
         <View style={styles.heroCard}>
           <DonutChart value={totals.calories} total={macroLimits.calories} size={120}  color="#3e89ec" backgroundColor="rgba(62, 137, 236, 0.3)"  >
             <MaterialCommunityIcons name="fire" size={25} color="#111" />
-            <Text style={styles.heroValue}>{Math.max(0, macroLimits.calories - totals.calories)}</Text>
-            <Text style={styles.heroSubtitle}>Calories Left</Text>
+
+            <Text style={styles.metricValue}>{totals.calories > macroLimits.calories 
+                ? `+${(totals.calories - macroLimits.calories).toFixed(0)}g` 
+                : `${(macroLimits.calories - totals.calories).toFixed(0)}g`
+              }</Text>
+
+            <Text style={styles.heroSubtitle}>{totals.calories > macroLimits.calories ? 'Calories Over' : 'Calories Left'}</Text>
+
+
           </DonutChart>
         </View>
 
@@ -270,33 +511,58 @@ export default function HomeScreen() {
           <View style={[styles.metricCard, { borderColor: '#d7e3ff' }] }>
             <DonutChart value={totals.protein} total={macroLimits.protein} size={92} color="#eaec76"  backgroundColor="rgba(234, 236, 118, 0.3)" >
               <MaterialCommunityIcons name="food-steak" size={18} color="#111" />
-              <Text style={styles.metricValue}>{Math.max(0, macroLimits.protein - totals.protein)}g</Text>
-              <Text style={styles.metricLabel}>Protein Left</Text>
+
+              <Text style={styles.metricValue}>{totals.protein > macroLimits.protein 
+                ? `+${(totals.protein - macroLimits.protein).toFixed(0)}g` 
+                : `${(macroLimits.protein - totals.protein).toFixed(0)}g`
+              }</Text>
+
+              <Text style={styles.metricLabel}> {totals.protein > macroLimits.protein ? 'Protein Over' : 'Protein Left'}</Text>
+
             </DonutChart>
           </View>
           <View style={[styles.metricCard, { borderColor: '#e8f5d6' }] }>
             <DonutChart value={totals.carbs} total={macroLimits.carbs} size={92}  color="#30db1d"  backgroundColor="rgba(48, 219, 29, 0.3)">
               <MaterialCommunityIcons name="bread-slice" size={18} color="#111" />
-              <Text style={styles.metricValue}>{Math.max(0, macroLimits.carbs - totals.carbs)}g</Text>
-              <Text style={styles.metricLabel}>Carbs Left</Text>
+
+              <Text style={styles.metricValue}>
+                {totals.carbs > macroLimits.carbs
+                ? `+${(totals.carbs - macroLimits.carbs).toFixed(0)}g` 
+                : `${(macroLimits.carbs - totals.carbs).toFixed(0)}g`
+              }
+              </Text>
+
+              <Text style={styles.metricLabel}> {totals.carbs > macroLimits.carbs ? 'Carbs Over' : 'Carbs Left'}</Text>
+
+
             </DonutChart>
           </View>
           <View style={[styles.metricCard, { borderColor: '#f7f5d9' }] }>
             <DonutChart value={totals.fat} total={macroLimits.fat} size={92} color="#f5d14e">
               <MaterialCommunityIcons name="bottle-wine" size={18} color="#111" />
-              <Text style={styles.metricValue}>{Math.max(0, macroLimits.fat - totals.fat)}g</Text>
-              <Text style={styles.metricLabel}>Fat Left</Text>
+
+              <Text style={styles.metricValue}>
+                {totals.fat > macroLimits.fat
+                ? `+${(totals.fat - macroLimits.fat).toFixed(0)}g` 
+                : `${(macroLimits.fat - totals.fat).toFixed(0)}g`
+              }
+              </Text>
+              <Text style={styles.metricLabel}> {totals.fat > macroLimits.fat ? 'Fat Over' : 'Fat Left'}</Text>
+
+
             </DonutChart>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Meal Plan</Text>
+        <View style={styles.mealPlanHeader}>
+          <Text style={styles.sectionTitle}>Meal Plan</Text>
+          {mealPlanData?.meals && checkedMeals.length > 0 && (
+            <Pressable style={styles.recordButton} onPress={recordDailyPerformance}>
+              <Text style={styles.recordButtonText}>Record Today's Meals</Text>
+            </Pressable>
+          )}
+        </View>
 
-        <TouchableOpacity onPress={() => {GenerateDailyMealPlan()}}>
-          <Text>Temp generate daily food log for db</Text>
-        </TouchableOpacity>
-
-       
         {(!mealPlanData || !mealPlanData.meals || mealPlanData.meals.length === 0) && (
           <>
             <Pressable style={styles.primaryBtn} onPress={GenerateDailyMealPlan}>
@@ -333,6 +599,8 @@ export default function HomeScreen() {
                 foodDiet={meal.diet}
                 time={time}
                 clerk_id={user?.id || ''}
+                isChecked={checkedMeals[i]?.[j] || false}
+                onToggle={handleMealToggle}
               />
             ))}
           </View>
@@ -396,6 +664,32 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
+  mealPlanHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  recordButton: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  recordButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  planSection: {
+    marginTop: 8,
+  },
+  mealHeading: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 8,
+    marginBottom: 6,
+  },
   primaryBtn: {
     backgroundColor: '#e6e6e6',
     paddingVertical: 12,
@@ -414,15 +708,7 @@ const styles = StyleSheet.create({
     borderColor: '#d8d8d8',
   },
   secondaryBtnText: { fontWeight: '700', color: '#555' },
-  planSection: {
-    marginTop: 8,
-  },
-  mealHeading: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 8,
-    marginBottom: 6,
-  },
+
   fab: {
     position: 'absolute',
     right: 20,
