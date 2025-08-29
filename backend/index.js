@@ -983,7 +983,7 @@ app.post('/api/recipes', async (req, res) => {
 
 // Create daily performance record
 app.post('/api/daily-performance', async (req, res) => {
-  console.log("Hit the daily performance endpoint");
+  
   try {
     const { clerk_id, date, total_calories, total_protein, total_carbs, total_fat } = req.body;
     
@@ -1021,7 +1021,7 @@ app.post('/api/daily-performance', async (req, res) => {
   }
 });
 
-// Get weekly performance data
+// Get weekly performance data. I dont need this yet.
 app.get('/api/weekly-performance/:clerk_id', async (req, res) => {
   try {
     const { clerk_id } = req.params;

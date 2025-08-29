@@ -12,7 +12,7 @@ Run the SQL script in `create_daily_performance_table.sql`:
 -- Run this in your MySQL database
 source create_daily_performance_table.sql;
 ```
-
+ 
 ### 2. Table Structure
 
 The `daily_performance` table tracks:
@@ -165,3 +165,4 @@ const recordDailyPerformance = async () => {
 - Today is highlighted with a blue border
 - Past days show green (goal reached) or red (below goal) fills
 - The system automatically handles date calculations and data aggregation
+

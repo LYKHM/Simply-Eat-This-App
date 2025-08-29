@@ -311,37 +311,37 @@ export default function HomeScreen() {
 
   // Load weekly performance data
   // Add this later.
-  /*
+  
   useEffect(() => {
-    const loadWeeklyPerformance = async () => {
-      if (!user) return;
-      
-      setIsLoadingPerformance(true);
-      try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/weekly-performance-summary/${user.id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (response.ok) {
-          const performanceData = await response.json();
-          setCurrentWeekCalories(performanceData.current_week);
-          setPreviousWeekCalories(performanceData.previous_week);
-        } else {
-          console.error('Failed to load weekly performance:', response.status);
-        }
-      } catch (error) {
-        console.error('Error loading weekly performance:', error);
-      } finally {
-        setIsLoadingPerformance(false);
-      }
-    };
-
     loadWeeklyPerformance();
   }, [user?.id]);
-  */
+
+  const loadWeeklyPerformance = async () => {
+    if (!user) return;
+    
+    setIsLoadingPerformance(true);
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/weekly-performance-summary/${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const performanceData = await response.json();
+        setCurrentWeekCalories(performanceData.current_week);
+        setPreviousWeekCalories(performanceData.previous_week);
+      } else {
+        console.error('Failed to load weekly performance:', response.status);
+      }
+    } catch (error) {
+      console.error('Error loading weekly performance:', error);
+    } finally {
+      setIsLoadingPerformance(false);
+    }
+  };
+  
 
   // Initialize checkmark state when meal plan data changes
   useEffect(() => {
@@ -353,8 +353,13 @@ export default function HomeScreen() {
     }
   }, [mealPlanData]);
 
+
+
   // Checkmark toggle function
   const handleMealToggle = async (groupIndex: number, mealIndex: number, isChecked: boolean) => {
+    
+
+
     const newCheckedMeals = [...checkedMeals];
     newCheckedMeals[groupIndex] = [...newCheckedMeals[groupIndex]];
     newCheckedMeals[groupIndex][mealIndex] = isChecked;
@@ -374,7 +379,7 @@ export default function HomeScreen() {
 
        // Save totals to MySQL (daily_performance table)
        // Always save updated totals to MySQL
-      await saveDailyTotalsToMySQL();
+      await saveDailyTotalsToMySQL(newCheckedMeals);
       
       
       if (newCount % 10 === 0) {
@@ -385,18 +390,32 @@ export default function HomeScreen() {
     }
   };
 
-  const saveDailyTotalsToMySQL = async () => {
-    console.log("Saving daily totals to MySQL");
+
+
+
+
+
+
+
+
+
+
+
+
+  const saveDailyTotalsToMySQL = async (checkedMealsToUse: boolean[][]) => {
+    
+    
     try {
       const today = new Date().toISOString().split('T')[0];
       
       // Calculate totals from checked meals
       let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
       
-      if (checkedMeals.length > 0 && mealPlanData) {
+    
+      if (checkedMealsToUse.length > 0 && mealPlanData) {
         mealPlanData.meals.forEach((group, groupIndex) => {
           group.meals.forEach((meal, mealIndex) => {
-            if (checkedMeals[groupIndex]?.[mealIndex]) {
+            if (checkedMealsToUse[groupIndex]?.[mealIndex]) {
               totalCalories += meal.scaledCalories || 0;
               totalProtein += meal.scaledProtein || 0;
               totalCarbs += meal.scaledCarbs || 0;
@@ -405,6 +424,9 @@ export default function HomeScreen() {
           });
         });
       }
+
+    
+
   
       // Save to daily_performance table
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/daily-performance`, {
@@ -421,7 +443,9 @@ export default function HomeScreen() {
       });
   
       if (response.ok) {
-        console.log('Daily totals updated to MySQL');
+        
+        // What if I grab user.id? Will this run the useEffect above?
+        await loadWeeklyPerformance(); 
       }
     } catch (error) {
       console.error('Error saving daily totals:', error);
@@ -446,7 +470,7 @@ export default function HomeScreen() {
         
         if (keyDate < threeDaysAgo) {
           await AsyncStorage.removeItem(key);
-          console.log(`Cleaned up old checkmarks: ${key}`);
+          //console.log(`Cleaned up old checkmarks: ${key}`);
         }
       }
     } catch (error) {

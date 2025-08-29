@@ -34,8 +34,10 @@ export default function WeeklyPerformance({
     if (dayStatus === 'future') return 'transparent'; // No fill for future days
     
     const percentage = calories / targetCalories;
-    if (percentage >= 0.9) return '#30db1d'; // Green for reaching goal
-    return '#e23d3d'; // Red for not reaching goal
+
+    if (percentage >= 1.0) return '#30db1d';        // Green: Goal reached (100%+)
+    else if (percentage >= 0.8) return '#ffa500';   // Orange: Close to goal (80-99%)
+    else return '#e23d3d';  
   };
   
   const getWeekAverage = (calories: number[]) => {
