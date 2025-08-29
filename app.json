@@ -31,7 +31,13 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Simply Eat This to access your camera"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

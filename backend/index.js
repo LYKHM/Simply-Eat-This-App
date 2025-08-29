@@ -3,6 +3,11 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
+const fs = require('fs');
+const OpenAI = require('openai');
+const client = new OpenAI();
+
+
 dotenv.config();
 
 const app = express();
@@ -1139,7 +1144,271 @@ app.get('/api/weekly-performance-summary/:clerk_id', async (req, res) => {
   }
 });
 
+app.get('/api/copy-yesterday/:clerk_id/:date', async (req, res) => {
+  const { clerk_id, date } = req.params;
+  
+  if (!clerk_id || !date) {
+    return res.status(400).json({ error: 'clerk_id and date are required' });
+  }
+
+  try {
+
+  const connection = await pool.getConnection();
+  
+  // Get yesterday's meal plan from users_food_log
+  const [rows] = await connection.execute(`
+    SELECT 
+      -- Log info
+      ufl.id AS log_id,
+      ufl.log_date,
+      ufl.meal_label,
+      ufl.meal_position,
+      ufl.servings,
+      ufl.scaled_calories,
+      ufl.scaled_protein,
+      ufl.scaled_carbs,
+      ufl.scaled_fat,
+  
+      -- User
+      ufl.user_id,
+  
+      -- Recipe info
+      r.id AS recipe_id,
+      r.name AS recipe_name,
+      r.calories,
+      r.protein,
+      r.fat,
+      r.carbs,
+      r.prep_time,
+      r.cook_time,
+      r.makes_x_servings,
+      r.image,
+      r.diet,
+      r.Health_Score,
+      r.cost,
+      r.allergies
+    FROM users_food_log ufl
+    INNER JOIN rec r ON ufl.recipe_id = r.id
+    WHERE ufl.user_id = ? AND ufl.log_date = ?
+    GROUP BY ufl.id, ufl.meal_label, ufl.meal_position
+    ORDER BY ufl.meal_label, ufl.meal_position
+  `, [clerk_id, date]);
+
+  //console.log('Rows:', rows);
+  // If I use DISTINCT it might not fetch all meals eats the same recipe multiple times a day.
+
+
+  if (rows.length === 0) {
+    connection.release();
+    return res.status(404).json({ error: 'No meal plan found for the specified date' });
+  }
+
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Prevent copying to same date
+  if (date === today) {
+    return res.status(400).json({ 
+      error: 'Cannot copy meals to the same date' 
+    });
+  }
+
+  // Check if meals already exist for today
+  const [existingMeals] = await connection.execute(
+    'SELECT COUNT(*) as count FROM users_food_log WHERE user_id = ? AND log_date = ?',
+    [clerk_id, today]
+  );
+
+  if (existingMeals[0].count > 0) {
+    connection.release();
+    return res.status(400).json({ 
+      error: 'Meals already exist for today' 
+    });
+  }
+
+
+  
+  for (const meal of rows) {
+    console.log('Inserting meal:', {
+      clerk_id,
+      recipe_id: meal.recipe_id,
+      meal_label: meal.meal_label,
+      meal_position: meal.meal_position || 0,
+      servings: meal.servings || 1,
+      today,
+      scaled_calories: meal.scaled_calories || 0,
+      scaled_protein: meal.scaled_protein || 0,
+      scaled_carbs: meal.scaled_carbs || 0,
+      scaled_fat: meal.scaled_fat || 0
+    });
+
+    await connection.execute(`
+      INSERT INTO users_food_log 
+      (user_id, recipe_id, meal_label, meal_position, servings, log_date, 
+       scaled_calories, scaled_protein, scaled_carbs, scaled_fat)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      clerk_id,
+      meal.recipe_id,
+      meal.meal_label,
+      meal.meal_position,
+      meal.servings,
+      today, // Use today's date
+      meal.scaled_calories,
+      meal.scaled_protein,
+      meal.scaled_carbs,
+      meal.scaled_fat
+    ]);
+  }
+
+  connection.release();
+  
+
+
+
+
+
+  // Transform the flat data into structured meal plan (same structure as daily-recipes)
+  const mealGroups = {};
+  const ingredientsByRecipe = {};
+
+  rows.forEach(row => {
+    const mealLabel = row.meal_label;
+    const recipeId = row.recipe_id;
+
+    // Initialize meal group if it doesn't exist
+    if (!mealGroups[mealLabel]) {
+      mealGroups[mealLabel] = {
+        label: mealLabel.charAt(0).toUpperCase() + mealLabel.slice(1),
+        meals: {}
+      };
+    }
+
+    // Initialize recipe if it doesn't exist in this meal
+    if (!mealGroups[mealLabel].meals[recipeId]) {
+      mealGroups[mealLabel].meals[recipeId] = {
+        id: recipeId,
+        image: row.image,
+        name: row.recipe_name,
+        Health_Score: row.Health_Score,
+        servings: row.servings,
+        prep_time: row.prep_time,
+        cook_time: row.cook_time,
+        diet: row.diet,
+        calories: row.calories,
+        protein: row.protein,
+        carbs: row.carbs,
+        fat: row.fat,
+        scaledCalories: row.scaled_calories,
+        scaledProtein: row.scaled_protein,
+        scaledCarbs: row.scaled_carbs,
+        scaledFat: row.scaled_fat
+      };
+    }
+
+    // Collect ingredients
+    if (row.ingredient_id) {
+      if (!ingredientsByRecipe[recipeId]) {
+        ingredientsByRecipe[recipeId] = [];
+      }
+      ingredientsByRecipe[recipeId].push({
+        ingredientId: row.ingredient_id,
+        name: row.ingredient_name,
+        quantity: row.scaled_quantity,
+        unit: row.unit
+      });
+    }
+  });
+
+  // Convert to array format matching your existing structure
+  const mealGroupsArray = Object.values(mealGroups).map(group => ({
+    diet: Object.values(group.meals)[0]?.diet || "unknown",
+    label: group.label,
+    labelCalories: Math.round(Object.values(group.meals).reduce((sum, m) => sum + m.scaledCalories, 0)),
+    meals: Object.values(group.meals).map(m => ({
+      recipeId: m.id,
+      image: m.image,
+      name: m.name,
+      Health_Score: m.Health_Score,
+      servings: m.servings,
+      prep_time: m.prep_time,
+      cook_time: m.cook_time,
+      diet: m.diet,
+      calories: Math.round(m.calories),
+      protein: Math.round(m.protein),
+      carbs: Math.round(m.carbs),
+      fat: Math.round(m.fat),
+      scaledCalories: Math.round(m.scaledCalories),
+      scaledProtein: Math.round(m.scaledProtein),
+      scaledCarbs: Math.round(m.scaledCarbs),
+      scaledFat: Math.round(m.scaledFat),
+      ingredients: ingredientsByRecipe[m.id] || []
+    }))
+  }));
+
+  // Calculate totals from all meals
+  const allMeals = mealGroupsArray.flatMap(group => group.meals);
+  const totalDailyCalories = allMeals.reduce((sum, m) => sum + m.scaledCalories, 0);
+  const totalDailyProtein = allMeals.reduce((sum, m) => sum + m.scaledProtein, 0);
+  const totalDailyCarbs = allMeals.reduce((sum, m) => sum + m.scaledCarbs, 0);
+  const totalDailyFat = allMeals.reduce((sum, m) => sum + m.scaledFat, 0);
+
+  // Return object with EXACT same structure as your existing route
+  const yesterdayMealPlan = {
+    date: date,
+    diet: allMeals[0]?.diet || "mixed",
+    TARGET_PER_MEAL: mealGroupsArray.length > 0 ? Math.round(totalDailyCalories / mealGroupsArray.length) : 0,
+    mealTime: mealGroupsArray.map(g => g.label),
+    totalDailyCalories: totalDailyCalories,
+    totalDailyCarbs: totalDailyCarbs,
+    totalDailyProtein: totalDailyProtein,
+    totalDailyFat: totalDailyFat,
+    meals: mealGroupsArray
+  };
+
+  res.json(yesterdayMealPlan);
+
+} catch (error) {
+  console.error('Error copying yesterday\'s meal plan:', error);
+  res.status(500).json({ error: 'Failed to copy yesterday\'s meal plan' });
+}
+});
+
+
+app.post('/api/openai-photo', async (req, res) => {
+  const { photo } = req.body;
+  
+  //Take the photo from expo camera
+  //Make it a base64 string
+  //Send it to openai
+  //Get the response
+  //Return the response
+
+  const openai = new OpenAI();
+    
+  const response = await openai.responses.create({  // OR await client.responses.create
+    model: "gpt-5-mini", // Which model to use?
+    input: [
+        {
+            role: "user", //What is the user's role?
+            content: [
+                { type: "input_text", text: "what's in this image?" },
+                {
+                    type: "input_image",
+                    image_url: `data:image/jpeg;base64,${photo}`,
+                },
+            ],
+        },
+    ],
+});
+
+  console.log(response.output_text);
+  res.json(response.output_text);
+});
+
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
+///TEST
