@@ -1,0 +1,885 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  StatusBar,
+  ActivityIndicator,
+  Animated,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as FileSystem from "expo-file-system";
+
+const { width } = Dimensions.get('window');
+
+interface Recipe {
+  name: string;
+  instructions: string;
+  ingredients_grams: Array<{ item: string; grams: number }>;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  health_rating: number;
+  time_minutes: number;
+  allergy_warning: string;
+  cost: number;
+}
+
+export default function RecipeResults() {
+    const params = useLocalSearchParams();
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+    const [base64Image, setBase64Image] = useState<string | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [fadeAnim] = useState(new Animated.Value(0));
+
+    const [loadingStage, setLoadingStage] = useState<'analyzing' | 'processing' | 'done'>('analyzing');
+
+// Convert the image to base64
+    useEffect(() => {
+        const convertToBase64 = async () => {
+          if (params.photo) {
+            try {
+              setLoading(true);
+
+              setLoadingStage('analyzing');
+              
+              const base64 = await FileSystem.readAsStringAsync(params.photo as string, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+              setBase64Image(base64);
+
+              setLoadingStage('processing');
+            
+              setLoading(false);
+            } catch (err) {
+              console.error("Error converting file:", err);
+              setLoading(false);
+            }
+          }
+        };
+    
+        convertToBase64();
+      }, [params.photo]);
+
+// Take the base64 image and send it to the backend and set the data to recipes state
+    useEffect(() => {
+        if (!base64Image) return;
+
+        const fetchRecipes = async () => {
+          try {
+            setLoading(true);
+            setError(null);
+
+            setLoadingStage('processing');
+            
+            if (!base64Image) {
+              setError('No photo data received');
+              setLoading(false);
+              return;
+            }
+    
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/openai-photo`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                photo: base64Image
+              }),
+            });
+    
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+    
+            const data = await response.json();
+            
+            setRecipes(data);
+
+            setLoadingStage('done');
+            setLoading(false);
+            
+          } catch (error) {
+            console.error('Error fetching recipes:', error);
+            setError(error instanceof Error ? error.message : 'Failed to fetch recipes');
+            setLoading(false);
+          }
+        };
+    
+        fetchRecipes();
+      }, [base64Image]);
+
+
+      const handleBack = () => {
+        router.back();
+      };
+
+      const handleRecipePress = (recipe: Recipe) => {
+        setSelectedRecipe(recipe);
+        setModalVisible(true);
+        // Fade in animation
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      };
+
+      const handleCloseRecipe = () => {
+        // Fade out animation
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          setModalVisible(false);
+          setSelectedRecipe(null);
+        });
+      };
+
+      
+      const handleRetry = () => {
+        // Reset and try again
+        setLoading(true);
+        setError(null);
+        setRecipes([]);
+
+        setLoadingStage('analyzing');
+        // The useEffect will trigger again
+      };
+
+      const renderHealthRating = (rating: number) => {
+        const stars = [];
+        const maxStars = 10;
+        
+        for (let i = 1; i <= maxStars; i++) {
+          if (i <= rating) {
+            stars.push(
+              <Ionicons 
+                key={i} 
+                name="star" 
+                size={12} 
+                color="#FFD700" 
+              />
+            );
+          } else {
+            stars.push(
+              <Ionicons 
+                key={i} 
+                name="star-outline" 
+                size={12} 
+                color="#D3D3D3" 
+              />
+            );
+          }
+        }
+        
+        return (
+          <View style={styles.healthRatingContainer}>
+            <Text style={styles.healthRatingLabel}>Health Rating:</Text>
+            <View style={styles.starsContainer}>
+              {stars}
+            </View>
+            <Text style={styles.healthRatingText}>{rating}/10</Text>
+          </View>
+        );
+      };
+
+
+
+        // ===== RENDER LOGIC =====
+    
+    // 1. LOADING SCREEN - Show while processing photo
+    if (loading) {
+      return (
+        <LinearGradient
+          colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
+          style={styles.container}
+        >
+          <StatusBar barStyle="dark-content" />
+                     <View style={styles.header}>
+             <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+               <Ionicons name="arrow-back" size={24} color="#212529" />
+             </TouchableOpacity>
+             <Text style={styles.headerTitle}>Recipe Suggestions</Text>
+             <View style={styles.headerSpacer} />
+           </View>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#212529" />
+            </View>
+        </LinearGradient>
+      );
+    }
+
+    // 2. ERROR SCREEN - Show if something goes wrong
+    if (error) {
+      return (
+        <LinearGradient
+          colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
+          style={styles.container}
+        >
+          <StatusBar barStyle="dark-content" />
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="#212529" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Recipe Suggestions</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+          <View style={styles.errorContainer}>
+            <Ionicons name="warning" size={64} color="#dc3545" />
+            <Text style={styles.errorTitle}>Something went wrong</Text>
+            <Text style={styles.errorSubtitle}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      );
+    }
+ 
+    // 3. NO RECIPES SCREEN - Show if API returns empty results
+    if (!recipes || recipes.length === 0) {
+      return (
+        <LinearGradient
+          colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
+          style={styles.container}
+        >
+          <StatusBar barStyle="dark-content" />
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="#212529" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Recipe Suggestions</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+          <View style={styles.noResultsContainer}>
+            <Ionicons name="restaurant-outline" size={64} color="rgba(108, 117, 125, 0.5)" />
+            <Text style={styles.noResultsTitle}>No recipes found</Text>
+            <Text style={styles.noResultsSubtitle}>
+              Try taking a photo of different ingredients or food items
+            </Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleBack}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      );
+    }
+
+    // ===== HELPER FUNCTIONS =====
+  const renderRecipeCard = (recipe: Recipe, index: number) => (
+    <TouchableOpacity
+      key={index}
+      style={styles.recipeCard}
+      onPress={() => handleRecipePress(recipe)}
+    >
+      <LinearGradient
+        colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.8)']}
+        style={styles.cardGradient}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={styles.recipeName} numberOfLines={2}>
+            {recipe.name}
+          </Text>
+          <View style={styles.recipeMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="time-outline" size={16} color="#6c757d" />
+              <Text style={styles.metaText}>{recipe.time_minutes}m</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="cash-outline" size={16} color="#6c757d" />
+              <Text style={styles.metaText}>${recipe.cost.toFixed(2)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {renderHealthRating(recipe.health_rating)}
+
+        <View style={styles.nutritionRow}>
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.calories}</Text>
+            <Text style={styles.nutritionLabel}>cal</Text>
+          </View>
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.protein_g}g</Text>
+            <Text style={styles.nutritionLabel}>protein</Text>
+          </View>
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.carbs_g}g</Text>
+            <Text style={styles.nutritionLabel}>carbs</Text>
+          </View>
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.fat_g}g</Text>
+            <Text style={styles.nutritionLabel}>fat</Text>
+          </View>
+        </View>
+
+        <View style={styles.ingredientsPreview}>
+          <Text style={styles.ingredientsLabel}>Ingredients:</Text>
+          <Text style={styles.ingredientsText} numberOfLines={2}>
+            {recipe.ingredients_grams.map(ing => ing.item).join(', ')}
+          </Text>
+        </View>
+
+       
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+
+  const renderRecipeModal = () => {
+    if (!selectedRecipe || !modalVisible) return null;
+
+    return (
+      <Animated.View 
+        style={[
+          styles.modalOverlay,
+          { opacity: fadeAnim }
+        ]}
+      >
+        <Animated.View 
+          style={[
+            styles.modalContent,
+            {
+              transform: [{
+                scale: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                })
+              }]
+            }
+          ]}
+        >
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{selectedRecipe.name}</Text>
+              <TouchableOpacity style={styles.closeModalButton} onPress={handleCloseRecipe}>
+                <Ionicons name="close" size={24} color="#6c757d" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalMeta}>
+              <View style={styles.modalMetaItem}>
+                <Ionicons name="time-outline" size={20} color="#6c757d" />
+                <Text style={styles.modalMetaText}>{selectedRecipe.time_minutes} minutes</Text>
+              </View>
+              <View style={styles.modalMetaItem}>
+                <Ionicons name="cash-outline" size={20} color="#6c757d" />
+                <Text style={styles.modalMetaText}>${selectedRecipe.cost.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            {renderHealthRating(selectedRecipe.health_rating)}
+
+            <View style={styles.modalNutrition}>
+              <Text style={styles.modalSectionTitle}>Nutrition Facts</Text>
+              <View style={styles.modalNutritionGrid}>
+                <View style={styles.modalNutritionItem}>
+                  <Text style={styles.modalNutritionValue}>{selectedRecipe.calories}</Text>
+                  <Text style={styles.modalNutritionLabel}>Calories</Text>
+                </View>
+                <View style={styles.modalNutritionItem}>
+                  <Text style={styles.modalNutritionValue}>{selectedRecipe.protein_g}g</Text>
+                  <Text style={styles.modalNutritionLabel}>Protein</Text>
+                </View>
+                <View style={styles.modalNutritionItem}>
+                  <Text style={styles.modalNutritionValue}>{selectedRecipe.carbs_g}g</Text>
+                  <Text style={styles.modalNutritionLabel}>Carbs</Text>
+                </View>
+                <View style={styles.modalNutritionItem}>
+                  <Text style={styles.modalNutritionValue}>{selectedRecipe.fat_g}g</Text>
+                  <Text style={styles.modalNutritionLabel}>Fat</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.modalIngredients}>
+              <Text style={styles.modalSectionTitle}>Ingredients</Text>
+              {selectedRecipe.ingredients_grams.map((ingredient, index) => (
+                <View key={index} style={styles.ingredientItem}>
+                  <Text style={styles.ingredientName}>{ingredient.item}</Text>
+                  <Text style={styles.ingredientAmount}>{ingredient.grams}g</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.modalInstructions}>
+              <Text style={styles.modalSectionTitle}>Instructions</Text>
+              <Text style={styles.instructionsText}>{selectedRecipe.instructions}</Text>
+            </View>
+
+            {selectedRecipe.allergy_warning !== 'no allergies found' && (
+              <View style={styles.allergyWarning}>
+                <Ionicons name="warning" size={20} color="#FF6B6B" />
+                <Text style={styles.allergyText}>{selectedRecipe.allergy_warning}</Text>
+              </View>
+            )}
+          </ScrollView>
+        </Animated.View>
+      </Animated.View>
+    );
+  };
+
+
+     // 4. MAIN RECIPES SCREEN - Show when recipes are loaded successfully
+     if(recipes){
+        return (
+            <LinearGradient
+              colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
+              style={styles.container}
+            >
+        <StatusBar barStyle="dark-content" />
+        
+        {/* Header with back button */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="arrow-back" size={24} color="#212529" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Recipe Suggestions</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+  
+        {/* Recipe list */}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          
+   
+  
+          <View style={styles.recipesGrid}>
+            {recipes.map((recipe, index) => renderRecipeCard(recipe, index))}
+          </View>
+        </ScrollView>
+  
+        {/* Recipe detail modal (shows when recipe is tapped) */}
+        {renderRecipeModal()}
+      </LinearGradient>
+            
+        )
+     }
+    
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 10,
+  },
+  backButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(233, 236, 239, 0.5)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#212529',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  headerSpacer: {
+    width: 44,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  resultsHeader: {
+    paddingVertical: 30,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    marginHorizontal: -20,
+    marginBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  resultsTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#212529',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  resultsSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+  },
+  recipesGrid: {
+    paddingBottom: 40,
+  },
+  recipeCard: {
+    marginBottom: 24,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  cardGradient: {
+    padding: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backdropFilter: 'blur(20px)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  cardHeader: {
+    marginBottom: 20,
+  },
+  recipeName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#212529',
+    marginBottom: 12,
+    lineHeight: 28,
+  },
+  recipeMeta: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  metaText: {
+    fontSize: 14,
+    color: '#6c757d',
+    fontWeight: '500',
+  },
+  healthRatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 12,
+  },
+  healthRatingLabel: {
+    fontSize: 14,
+    color: '#495057',
+    fontWeight: '600',
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  healthRatingText: {
+    fontSize: 14,
+    color: '#6c757d',
+    fontWeight: '600',
+  },
+  nutritionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(248, 249, 250, 0.8)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(233, 236, 239, 0.5)',
+  },
+  nutritionItem: {
+    alignItems: 'center',
+  },
+  nutritionValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#212529',
+  },
+  nutritionLabel: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+
+  ingredientsPreview: {
+    marginBottom: 20,
+  },
+  ingredientsLabel: {
+    fontSize: 14,
+    color: '#495057',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  ingredientsText: {
+    fontSize: 14,
+    color: '#6c757d',
+    lineHeight: 22,
+  },
+  cardFooter: {
+    alignItems: 'flex-end',
+  },
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(13, 110, 253, 0.2)',
+  },
+  viewButtonText: {
+    fontSize: 14,
+    color: '#0d6efd',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    width: width - 40,
+    maxHeight: '90%',
+    backgroundColor: '#ffffff',
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.15,
+    shadowRadius: 40,
+    elevation: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#212529',
+    flex: 1,
+    marginRight: 20,
+  },
+  closeModalButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  modalMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 28,
+    paddingVertical: 20,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  modalMetaItem: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  modalMetaText: {
+    fontSize: 14,
+    color: '#495057',
+    fontWeight: '500',
+  },
+  modalNutrition: {
+    marginBottom: 28,
+  },
+  modalSectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#212529',
+    marginBottom: 16,
+  },
+  modalNutritionGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  modalNutritionItem: {
+    alignItems: 'center',
+  },
+  modalNutritionValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#212529',
+  },
+  modalNutritionLabel: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  modalIngredients: {
+    marginBottom: 28,
+  },
+  ingredientItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  ingredientName: {
+    fontSize: 16,
+    color: '#212529',
+    flex: 1,
+    fontWeight: '500',
+  },
+  ingredientAmount: {
+    fontSize: 16,
+    color: '#6c757d',
+    fontWeight: '600',
+  },
+  modalInstructions: {
+    marginBottom: 24,
+  },
+  instructionsText: {
+    fontSize: 16,
+    color: '#495057',
+    lineHeight: 26,
+  },
+  allergyWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(220, 53, 69, 0.2)',
+  },
+  allergyText: {
+    fontSize: 14,
+    color: '#dc3545',
+    flex: 1,
+    fontWeight: '500',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  loadingTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#212529',
+    textAlign: 'center',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  loadingSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#212529',
+    textAlign: 'center',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  errorSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  noResultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  noResultsTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#212529',
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  noResultsSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 30,
+  },
+  retryButton: {
+    backgroundColor: '#212529',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+});

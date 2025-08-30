@@ -244,7 +244,7 @@ export default function HomeScreen() {
     try {
       console.log("Copying yesterday's meal plan:", `${process.env.EXPO_PUBLIC_API_BASE}/api/copy-yesterday/${user.id}/${yesterdayDate}`);
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/copy-yesterday/${user.id}/${yesterdayDate}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -272,7 +272,7 @@ export default function HomeScreen() {
       await recordDailyPerformance();
       
     } catch (error) {
-      console.error('Error copying yesterday\'s meal plan:', error);
+      console.error('Error copying yesterdays meal plan:', error);
     }
   }
 

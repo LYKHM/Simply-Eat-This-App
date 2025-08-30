@@ -123,7 +123,7 @@ const Meal: React.FC<MealProps> = ({
     const id = newRecipe ? refreshedRecipe.id : recipeId;
 
     router.push({
-      pathname: '/RecipePage', 
+      pathname: '/RecipePage',  
       params: { 
         id: id.toString(),
         recipe: JSON.stringify(recipeData),

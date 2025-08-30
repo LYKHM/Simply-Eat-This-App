@@ -11,34 +11,26 @@ export default function App() {
 
 
   const takePhoto = async () => {
+    console.log('Taking photo...');
     if (cameraRef.current) {
       try {
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-          base64: true, // This gives you base64!
+          quality: 0.6, // The image is too large, so reduce the quality
         });
+        console.log('Done with takePictureAsync');
+        //const base64Image = photo.base64;
+        console.log('Photo captured!');
         
-        const base64Image = photo.base64;
-        console.log('Photo captured! Base64 length:', base64Image?.length);
-        
-        fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/openai-photo`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-             photo: base64Image 
-            }),
-        }).then(response => response.json()).then(data => {
-          console.log(data);
-          // Use the data to display all the recipes
-          // Should I do it inside the modal/camera or a new page?
-        }).catch(error => {
-          console.error('Error sending photo to API:', error);
-
-        });
-        
-        
+      // Navigate immediately to RecipeResults with the photo data
+      console.log('Navigating to RecipeResults with photo data');
+      router.replace({
+        pathname: '/RecipeResults',
+        params: { 
+          photo: photo.uri,
+          timestamp: Date.now().toString() // Add timestamp to ensure fresh navigation
+        }
+      });
+   
       } catch (error) {
         console.error('Error taking photo:', error);
       }
