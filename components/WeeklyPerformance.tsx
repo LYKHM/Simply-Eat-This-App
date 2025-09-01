@@ -16,15 +16,15 @@ export default function WeeklyPerformance({
 }: WeeklyPerformanceProps) {
   const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   
-  // Get today's day index (0 = Sunday, 1 = Monday, etc.)
-  const today = new Date().getDay();
+   // Get today's day index (0 = Sunday, 1 = Monday, etc.)
+   const today = new Date().getDay();
   
-  const getDayStatus = (index: number) => {
-    if (index < today) return 'past';
-    if (index === today) return 'today';
-    return 'future';
-  };
-  
+   const getDayStatus = (index: number) => {
+     if (index < today) return 'past';
+     if (index === today) return 'today';
+     return 'future';
+   };
+   
   const getBoxFillHeight = (calories: number) => {
     const percentage = Math.min(calories / targetCalories, 1);
     return percentage * 40; // Max height 40

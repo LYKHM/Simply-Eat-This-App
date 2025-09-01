@@ -44,6 +44,10 @@ function RootLayoutNav() {
               <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
               <Stack.Screen name="RecipePage" options={{ headerShown: false }} />
               <Stack.Screen name="RecipeResults" options={{ headerShown: false }} />
+              <Stack.Screen name="profile-information" options={{ headerShown: false }} />
+              <Stack.Screen name="diet-type" options={{ headerShown: false }} />
+              <Stack.Screen name="nutrition-targets" options={{ headerShown: false }} />
+              <Stack.Screen name="weight-goal" options={{ headerShown: false }} />
             </Stack>
         </ThemeProvider>
       </ClerkLoaded>

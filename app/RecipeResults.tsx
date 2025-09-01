@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as FileSystem from "expo-file-system";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -32,17 +33,27 @@ interface Recipe {
   cost: number;
 }
 
+interface RecipeResponse {
+  ingredientsInPhoto: string;
+  meals: Recipe[];
+}
+
 export default function RecipeResults() {
     const params = useLocalSearchParams();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [ingredientsInPhoto, setIngredientsInPhoto] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     const [base64Image, setBase64Image] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(0));
+    const [diet, setDiet] = useState<string>('');
+    const [calories, setCalories] = useState<number>(0);
 
-    const [loadingStage, setLoadingStage] = useState<'analyzing' | 'processing' | 'done'>('analyzing');
+
+  
+    
 
 // Convert the image to base64
     useEffect(() => {
@@ -50,15 +61,12 @@ export default function RecipeResults() {
           if (params.photo) {
             try {
               setLoading(true);
-
-              setLoadingStage('analyzing');
+              
               
               const base64 = await FileSystem.readAsStringAsync(params.photo as string, {
                 encoding: FileSystem.EncodingType.Base64,
               });
               setBase64Image(base64);
-
-              setLoadingStage('processing');
             
               setLoading(false);
             } catch (err) {
@@ -79,14 +87,24 @@ export default function RecipeResults() {
           try {
             setLoading(true);
             setError(null);
-
-            setLoadingStage('processing');
             
             if (!base64Image) {
               setError('No photo data received');
               setLoading(false);
               return;
             }
+
+            const userDataString = await AsyncStorage.getItem("userData");
+            const userData = JSON.parse(userDataString || '{}');
+            setDiet(userData.dietChoice || 'anything');
+
+            const nutritionDataString = await AsyncStorage.getItem("nutritionData");
+            const nutritionData = JSON.parse(nutritionDataString || '{}');
+            setCalories(nutritionData.calories || 2000);
+
+
+
+
     
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/openai-photo`, {
               method: 'POST',
@@ -94,7 +112,9 @@ export default function RecipeResults() {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                photo: base64Image
+                photo: base64Image,
+                diet: diet,
+                calories: calories,
               }),
             });
     
@@ -102,11 +122,10 @@ export default function RecipeResults() {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
     
-            const data = await response.json();
+            const data: RecipeResponse = await response.json();
             
-            setRecipes(data);
-
-            setLoadingStage('done');
+            setRecipes(data.meals);
+            setIngredientsInPhoto(data.ingredientsInPhoto);
             setLoading(false);
             
           } catch (error) {
@@ -154,7 +173,7 @@ export default function RecipeResults() {
         setError(null);
         setRecipes([]);
 
-        setLoadingStage('analyzing');
+    
         // The useEffect will trigger again
       };
 
@@ -216,6 +235,7 @@ export default function RecipeResults() {
            </View>
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#212529" />
+              <Text>Wait, this can take a few seconds...</Text>
             </View>
         </LinearGradient>
       );
@@ -452,8 +472,22 @@ export default function RecipeResults() {
         {/* Recipe list */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           
-   
-  
+          {/* Ingredients Detected Box */}
+          {ingredientsInPhoto && (
+            <View style={styles.ingredientsBox}>
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
+                style={styles.ingredientsGradient}
+              >
+                <View style={styles.ingredientsHeader}>
+                  <Ionicons name="eye-outline" size={20} color="#495057" />
+                  <Text style={styles.ingredientsTitle}>Ingredients Detected</Text>
+                </View>
+                <Text style={styles.ingredientsText}>{ingredientsInPhoto}</Text>
+              </LinearGradient>
+            </View>
+          )}
+
           <View style={styles.recipesGrid}>
             {recipes.map((recipe, index) => renderRecipeCard(recipe, index))}
           </View>
@@ -536,6 +570,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6c757d',
     textAlign: 'center',
+  },
+  ingredientsBox: {
+    marginBottom: 24,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  ingredientsGradient: {
+    padding: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backdropFilter: 'blur(20px)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  ingredientsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  ingredientsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#212529',
+  },
+  ingredientsText: {
+    fontSize: 15,
+    color: '#495057',
+    lineHeight: 22,
+    fontStyle: 'italic',
   },
   recipesGrid: {
     paddingBottom: 40,
@@ -635,11 +703,6 @@ const styles = StyleSheet.create({
     color: '#495057',
     marginBottom: 8,
     fontWeight: '600',
-  },
-  ingredientsText: {
-    fontSize: 14,
-    color: '#6c757d',
-    lineHeight: 22,
   },
   cardFooter: {
     alignItems: 'flex-end',

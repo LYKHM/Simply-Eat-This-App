@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect,useCallback, useRef } from 'react';
+import React, { useMemo, useState, useEffect,useCallback, useRef, use } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Animated, PanResponder, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DonutChart from '@/components/DonutChart';
@@ -76,7 +76,7 @@ type MealPlan = {
 export default function HomeScreen() {
 
   //Sneak peak into the data from the onboarding
-  /*
+  
   const lookAtData = async () => {
     const userDataString = await AsyncStorage.getItem("userData");
     const userData = userDataString ? JSON.parse(userDataString) : null;
@@ -85,7 +85,12 @@ export default function HomeScreen() {
     console.log("userData", userData);
     console.log("nutritionData", nutritionData);
   }
-  */
+
+  useEffect(() => {
+    lookAtData();
+  }, []);
+  
+
 
   const { user, isLoaded } = useUser();
   //console.log("Do i have the suer data in the home screen? user: ", user)
@@ -349,7 +354,7 @@ export default function HomeScreen() {
   
         if (response.ok) {
           const theUsersDailyMealPlan = await response.json();
-          console.log("✅ Daily meal plan loaded:", theUsersDailyMealPlan);
+         // console.log("✅ Daily meal plan loaded:", theUsersDailyMealPlan);
           setMealPlanData(theUsersDailyMealPlan);
         } else {
           console.error('Failed to load daily meal plan:', response.status);
