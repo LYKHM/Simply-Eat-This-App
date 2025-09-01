@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from '@/components/Themed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface UserData {
   height: string;
@@ -104,6 +105,7 @@ export default function DietTypeScreen() {
   }
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
@@ -178,6 +180,7 @@ export default function DietTypeScreen() {
         </View>
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 }
 

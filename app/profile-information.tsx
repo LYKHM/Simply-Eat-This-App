@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from '@/components/Themed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface UserData {
   height: string;
@@ -180,6 +181,7 @@ export default function ProfileInformationScreen() {
   }
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <LinearGradient
       colors={['#ffffff', '#fef7ff', '#f0f9ff']}
       style={styles.container}
@@ -267,6 +269,7 @@ export default function ProfileInformationScreen() {
         </View>
       </ScrollView>
     </LinearGradient>
+    </SafeAreaView>
   );
 }
 

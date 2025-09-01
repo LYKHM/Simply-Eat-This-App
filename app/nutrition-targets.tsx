@@ -6,6 +6,7 @@ import { Text, View } from '@/components/Themed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { PieChart } from 'react-native-gifted-charts';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface NutritionData {
   bmr: number;
@@ -230,6 +231,7 @@ export default function NutritionTargetsScreen() {
   const { carbs, fat, protein } = calculateMacros();
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <LinearGradient
       colors={['#ffffff', '#fef7ff', '#f0f9ff']}
       style={styles.container}
@@ -337,6 +339,7 @@ export default function NutritionTargetsScreen() {
         </View>
       </ScrollView>
     </LinearGradient>
+    </SafeAreaView>
   );
 }
 

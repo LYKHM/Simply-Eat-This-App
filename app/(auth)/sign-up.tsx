@@ -1,6 +1,6 @@
 
 import { StyleSheet, Text, View, Image, TextInput, Button, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from "react";
 import { Link } from "expo-router";
 import { useSignUp, useAuth, useUser } from '@clerk/clerk-expo'
@@ -11,7 +11,7 @@ import SocialLogInButton from "../../components/SocialLogInButton";
 
 
 export default function SignUpScreen ()  {
-  const insets = useSafeAreaInsets(); //What is this?
+  
 
   const { isLoaded, signUp, setActive } = useSignUp()
   const router = useRouter()
@@ -168,6 +168,7 @@ export default function SignUpScreen ()  {
 
 
   return (
+  <SafeAreaView>
     <KeyboardAvoidingView
       style={[
         styles.container,
@@ -235,6 +236,7 @@ export default function SignUpScreen ()  {
           </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  </SafeAreaView>
   );
 };
 

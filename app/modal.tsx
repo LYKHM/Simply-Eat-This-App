@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
@@ -45,6 +46,7 @@ export default function App() {
 
   if (!permission.granted) {
     return (
+      <SafeAreaView>
       <View style={styles.permissionContainer}>
         <View style={styles.permissionCard}>
           <View style={styles.permissionIcon}>
@@ -61,6 +63,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
       </View>
+      </SafeAreaView>
     );
   }
 
@@ -72,6 +75,7 @@ export default function App() {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       
@@ -104,6 +108,7 @@ export default function App() {
         
       </View>
     </View>
+    </SafeAreaView>
   );
 }
 

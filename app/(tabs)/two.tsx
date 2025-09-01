@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from '@/components/Themed';
 import { useRouter } from 'expo-router';
+import { useClerk } from '@clerk/clerk-expo';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface SettingItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -56,8 +58,25 @@ const SettingItem: React.FC<SettingItemProps> = ({
 export default function SettingsScreen() {
   const [remindersEnabled, setRemindersEnabled] = React.useState(true);
   const router = useRouter();
+  const { signOut } = useClerk();
 
-    const handleSettingPress = (settingName: string) => {
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // Redirect to the auth screen after successful sign-out
+      router.replace('/(auth)');
+    } catch (err) {
+      // Handle any errors during sign-out
+      console.error('Sign out error:', err);
+      Alert.alert(
+        'Sign Out Error',
+        'There was an error signing out. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleSettingPress = (settingName: string) => {
     if (settingName === 'Profile Information') {
       router.push('/profile-information');
     } else if (settingName === 'Primary Diet Type') {
@@ -66,12 +85,16 @@ export default function SettingsScreen() {
       router.push('/nutrition-targets');
     } else if (settingName === 'Weight and Goal') {
       router.push('/weight-goal');
-    } else {
-      Alert.alert('Settings', `${settingName} setting tapped`);
+    } else if (settingName === 'Account Information') {
+      router.push('/account-information');
+    } else if (settingName === 'Logout') {
+      // Show confirmation dialog before signing out
     }
   };
 
+
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <LinearGradient
       colors={['#ffffff', '#fef7ff', '#f0f9ff']}
       style={styles.container}
@@ -119,7 +142,7 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
-
+      {/*   
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Meals and Schedule</Text>
           <View style={styles.sectionContent}>
@@ -153,6 +176,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Saved Foods and Plans</Text>
           <View style={styles.sectionContent}>
@@ -176,6 +200,7 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
+        */}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Info</Text>
@@ -190,7 +215,7 @@ export default function SettingsScreen() {
               icon="log-out-outline"
               title="Logout"
               subtitle="Sign out of your account"
-              onPress={() => handleSettingPress('Logout')}
+              onPress={() => handleSignOut()} 
               showArrow={false}
             />
           </View>
@@ -201,6 +226,7 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
     </LinearGradient>
+    </SafeAreaView>
   );
 }
 

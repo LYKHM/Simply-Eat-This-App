@@ -77,6 +77,7 @@ export default function HomeScreen() {
 
   //Sneak peak into the data from the onboarding
   
+  /*
   const lookAtData = async () => {
     const userDataString = await AsyncStorage.getItem("userData");
     const userData = userDataString ? JSON.parse(userDataString) : null;
@@ -89,6 +90,7 @@ export default function HomeScreen() {
   useEffect(() => {
     lookAtData();
   }, []);
+  */
   
 
 
@@ -609,7 +611,7 @@ export default function HomeScreen() {
   }, [mealPlanData]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
         <WeeklyPerformance 
           currentWeekCalories={currentWeekCalories}
@@ -769,7 +771,7 @@ export default function HomeScreen() {
                 <Text style={styles.optionTitle}>AI Camera</Text>
                 <Text style={styles.optionSubtitle}>Take a photo of your fridge and AI will find easy-to-make recipes</Text>
               </TouchableOpacity>
-              
+              {/*  
               <TouchableOpacity style={styles.modalOption} onPress={handleOption2}>
                 <View style={styles.optionIcon}>
                   <Ionicons name="bulb" size={32} color="#faf873" />
@@ -777,6 +779,7 @@ export default function HomeScreen() {
                 <Text style={styles.optionTitle}>Find Healthy Snacks</Text>
                 <Text style={styles.optionSubtitle}>What you can add to your diet to hit your calories and macros</Text>
               </TouchableOpacity>
+              */}
             </View>
           </Animated.View>
         </Animated.View>

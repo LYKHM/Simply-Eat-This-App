@@ -1,7 +1,7 @@
 
 
 import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import React from "react";
@@ -34,7 +34,6 @@ const AuthScreen = () => {
  
   useWarmUpBrowser();
 
-  const insets = useSafeAreaInsets(); // What is this?
   const { getToken } = useAuth();  // This is for auto log in later
   const { user } = useUser()  
 
@@ -89,6 +88,7 @@ const AuthScreen = () => {
 
   return (
  
+  <SafeAreaView>
     <KeyboardAvoidingView
       style={[
         styles.container,
@@ -155,6 +155,7 @@ const AuthScreen = () => {
             </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  </SafeAreaView> 
   ); 
 };
 

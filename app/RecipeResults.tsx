@@ -16,6 +16,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -221,6 +222,7 @@ export default function RecipeResults() {
     // 1. LOADING SCREEN - Show while processing photo
     if (loading) {
       return (
+        <SafeAreaView style={{ flex: 1 }}>
         <LinearGradient
           colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
           style={styles.container}
@@ -238,12 +240,14 @@ export default function RecipeResults() {
               <Text>Wait, this can take a few seconds...</Text>
             </View>
         </LinearGradient>
+        </SafeAreaView>
       );
     }
 
     // 2. ERROR SCREEN - Show if something goes wrong
     if (error) {
       return (
+        <SafeAreaView>
         <LinearGradient
           colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
           style={styles.container}
@@ -265,12 +269,14 @@ export default function RecipeResults() {
             </TouchableOpacity>
           </View>
         </LinearGradient>
+        </SafeAreaView>
       );
     }
  
     // 3. NO RECIPES SCREEN - Show if API returns empty results
     if (!recipes || recipes.length === 0) {
       return (
+        <SafeAreaView>
         <LinearGradient
           colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
           style={styles.container}
@@ -294,11 +300,13 @@ export default function RecipeResults() {
             </TouchableOpacity>
           </View>
         </LinearGradient>
+        </SafeAreaView>
       );
     }
 
     // ===== HELPER FUNCTIONS =====
   const renderRecipeCard = (recipe: Recipe, index: number) => (
+    <SafeAreaView>
     <TouchableOpacity
       key={index}
       style={styles.recipeCard}
@@ -355,6 +363,7 @@ export default function RecipeResults() {
        
       </LinearGradient>
     </TouchableOpacity>
+    </SafeAreaView>
   );
 
   const renderRecipeModal = () => {
