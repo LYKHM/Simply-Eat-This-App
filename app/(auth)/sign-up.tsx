@@ -168,7 +168,7 @@ export default function SignUpScreen ()  {
 
 
   return (
-  <SafeAreaView>
+  <SafeAreaView style={{flex: 1}}>
     <KeyboardAvoidingView
       style={[
         styles.container,

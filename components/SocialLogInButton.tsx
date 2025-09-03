@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import * as AuthSession from 'expo-auth-session'
  
  
@@ -32,6 +32,8 @@ const SocialLoginButton = ({
   const { startSSOFlow } = useSSO(); 
   const { user, isLoaded  } = useUser();
   const [isLoading, setIsLoading] = useState(false);
+  const hasSyncedRef = useRef(false);
+  console.log("hasSynced:", hasSyncedRef.current);
   
 
   const router = useRouter();
@@ -59,12 +61,15 @@ const SocialLoginButton = ({
     }
   };
   
-  useEffect(() => {
-    if (user && isLoaded) {
-      // User is now available, sync with database
-      syncUserWithDatabase();
-    }
-  }, [user, isLoaded]);
+     //Oh I only run the use Effect when its ready. But how do I prevent it from running twice?
+   useEffect(() => {
+     console.log("useEffect running");
+     if (user && isLoaded && !hasSyncedRef.current) {
+       // User is now available, sync with database
+       syncUserWithDatabase();
+       hasSyncedRef.current = true;
+     }
+   }, [user, isLoaded]);
  
 
   const onSocialLoginPress = React.useCallback(async () => {
@@ -95,9 +100,19 @@ const SocialLoginButton = ({
   }, []);
 
 
+ 
+
   const syncUserWithDatabase = async () => {
-   
+    console.log("=== Starting user sync ===");
+    
+    console.log("User data:", {
+      clerk_id: user?.id,
+      email: user?.emailAddresses[0]?.emailAddress,
+    });
+
+
     try {
+      console.log("Making fetch request...");
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/users`, {
         method: 'POST',
         headers: {
@@ -110,7 +125,6 @@ const SocialLoginButton = ({
         })
       });
 
-    
   
       if (!response.ok) {
         const errorText = await response.text();

@@ -46,7 +46,7 @@ export default function App() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView>
+      <SafeAreaView style={{flex: 1}}>
       <View style={styles.permissionContainer}>
         <View style={styles.permissionCard}>
           <View style={styles.permissionIcon}>

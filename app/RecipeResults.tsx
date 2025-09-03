@@ -247,7 +247,7 @@ export default function RecipeResults() {
     // 2. ERROR SCREEN - Show if something goes wrong
     if (error) {
       return (
-        <SafeAreaView>
+        <SafeAreaView style={{flex: 1}}>
         <LinearGradient
           colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
           style={styles.container}
@@ -276,7 +276,7 @@ export default function RecipeResults() {
     // 3. NO RECIPES SCREEN - Show if API returns empty results
     if (!recipes || recipes.length === 0) {
       return (
-        <SafeAreaView>
+        <SafeAreaView style={{flex: 1}}>
         <LinearGradient
           colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
           style={styles.container}
@@ -306,7 +306,7 @@ export default function RecipeResults() {
 
     // ===== HELPER FUNCTIONS =====
   const renderRecipeCard = (recipe: Recipe, index: number) => (
-    <SafeAreaView>
+    <SafeAreaView style={{flex: 1}}>
     <TouchableOpacity
       key={index}
       style={styles.recipeCard}

@@ -25,8 +25,11 @@ WebBrowser.maybeCompleteAuthSession();
 
 
 const AuthScreen = () => {
+  //console.log("You are on the index screen/sign in screen")
+  //console.log("env file:", process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY); 
 
   const {isSignedIn} = useAuth();
+  //console.log("auth/index: isSignedIn:", isSignedIn);
 
  
  
@@ -36,6 +39,7 @@ const AuthScreen = () => {
 
   const { getToken } = useAuth();  // This is for auto log in later
   const { user } = useUser()  
+  //console.log("auth/index: user:", user);
 
   const { signIn, setActive, isLoaded } = useSignIn()
   const router = useRouter()
@@ -88,7 +92,7 @@ const AuthScreen = () => {
 
   return (
  
-  <SafeAreaView>
+  <SafeAreaView style={{flex: 1}}>
     <KeyboardAvoidingView
       style={[
         styles.container,

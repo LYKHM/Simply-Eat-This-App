@@ -99,7 +99,10 @@ export default function HomeScreen() {
   const [mealPlanData, setMealPlanData] = useState<MealPlan | null>(null);
   const [time, setTime] = useState(20);
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Add this before the render to debug
   
+      
   // Weekly performance data
   const [currentWeekCalories, setCurrentWeekCalories] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [previousWeekCalories, setPreviousWeekCalories] = useState([0, 0, 0, 0, 0, 0, 0]);
@@ -283,8 +286,6 @@ export default function HomeScreen() {
     }
   }
 
-
-
   // Record daily performance
   const recordDailyPerformance = async () => {
     if (!user || !mealPlanData) return;
@@ -341,7 +342,6 @@ export default function HomeScreen() {
   };
 
  
-
   useEffect(() => {
     const loadDailyMealPlan = async () => {
       if (!user) return;
@@ -402,7 +402,6 @@ export default function HomeScreen() {
     }
   };
   
-
   // Initialize checkmark state when meal plan data changes
   useEffect(() => {
     if (mealPlanData?.meals) {
@@ -418,8 +417,6 @@ export default function HomeScreen() {
   // Checkmark toggle function
   const handleMealToggle = async (groupIndex: number, mealIndex: number, isChecked: boolean) => {
     
-
-
     const newCheckedMeals = [...checkedMeals];
     newCheckedMeals[groupIndex] = [...newCheckedMeals[groupIndex]];
     newCheckedMeals[groupIndex][mealIndex] = isChecked;
@@ -450,12 +447,7 @@ export default function HomeScreen() {
     }
   };
 
-
-
-
-
   const saveDailyTotalsToMySQL = async (checkedMealsToUse: boolean[][]) => {
-    
     
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -503,8 +495,6 @@ export default function HomeScreen() {
       console.error('Error saving daily totals:', error);
     }
   };
-
-
 
   // Cleanup function for old checkmarks
   const cleanupOldCheckmarks = async () => {
@@ -769,7 +759,7 @@ export default function HomeScreen() {
                   <Ionicons name="camera" size={32} color="#3b82f6" />
                 </View>
                 <Text style={styles.optionTitle}>AI Camera</Text>
-                <Text style={styles.optionSubtitle}>Take a photo of your fridge and AI will find easy-to-make recipes</Text>
+                <Text style={styles.optionSubtitle}>Take a photo of your fridge, and AI will suggest easy recipes using the ingredients you already have at home.</Text>
               </TouchableOpacity>
               {/*  
               <TouchableOpacity style={styles.modalOption} onPress={handleOption2}>

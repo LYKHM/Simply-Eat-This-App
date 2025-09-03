@@ -75,7 +75,7 @@ export default function AccountInformationScreen() {
       Alert.alert('Error', 'Failed to delete account. Please try again.');
     } finally{
       await signOut();
-      router.replace('/(auth)/sign-up') // Is this a good place? Yes it was
+      router.replace('/(auth)') // Is this a good place? Yes it was
     }
   };
 

@@ -57,9 +57,10 @@ export default function Index() {
   }
 
   // Routing decisions
-  if (!hasSeenOnboarding) return <Redirect href="/onboarding" />;
+  if (!hasSeenOnboarding) return <Redirect href="/onboarding" />; // Change this later
   console.log("user has seen onboarding go to /onboarding");
   if (isSignedIn) return <Redirect href="/(tabs)" />;
-  console.log("user is not signed in go to /(tabs");
+  console.log("isSignedIn", isSignedIn);
+  console.log("user is not signed in go to /(auth)");
   return <Redirect href="/(auth)" />;
 }

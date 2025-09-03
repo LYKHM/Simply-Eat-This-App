@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 
 
 export default function AuthRoutesLayout() {
+  console.log("auth/_layout: AuthRoutesLayout");
 
   //Do I need isSingedIn inside this file or can I move it to the auth/index??
  //const {isSignedIn} = useAuth();
