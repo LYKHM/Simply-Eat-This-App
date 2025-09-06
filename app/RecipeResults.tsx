@@ -305,66 +305,6 @@ export default function RecipeResults() {
     }
 
     // ===== HELPER FUNCTIONS =====
-  const renderRecipeCard = (recipe: Recipe, index: number) => (
-    <SafeAreaView style={{flex: 1}}>
-    <TouchableOpacity
-      key={index}
-      style={styles.recipeCard}
-      onPress={() => handleRecipePress(recipe)}
-    >
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.8)']}
-        style={styles.cardGradient}
-      >
-        <View style={styles.cardHeader}>
-          <Text style={styles.recipeName} numberOfLines={2}>
-            {recipe.name}
-          </Text>
-          <View style={styles.recipeMeta}>
-            <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={16} color="#6c757d" />
-              <Text style={styles.metaText}>{recipe.time_minutes}m</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Ionicons name="cash-outline" size={16} color="#6c757d" />
-              <Text style={styles.metaText}>${recipe.cost.toFixed(2)}</Text>
-            </View>
-          </View>
-        </View>
-
-        {renderHealthRating(recipe.health_rating)}
-
-        <View style={styles.nutritionRow}>
-          <View style={styles.nutritionItem}>
-            <Text style={styles.nutritionValue}>{recipe.calories}</Text>
-            <Text style={styles.nutritionLabel}>cal</Text>
-          </View>
-          <View style={styles.nutritionItem}>
-            <Text style={styles.nutritionValue}>{recipe.protein_g}g</Text>
-            <Text style={styles.nutritionLabel}>protein</Text>
-          </View>
-          <View style={styles.nutritionItem}>
-            <Text style={styles.nutritionValue}>{recipe.carbs_g}g</Text>
-            <Text style={styles.nutritionLabel}>carbs</Text>
-          </View>
-          <View style={styles.nutritionItem}>
-            <Text style={styles.nutritionValue}>{recipe.fat_g}g</Text>
-            <Text style={styles.nutritionLabel}>fat</Text>
-          </View>
-        </View>
-
-        <View style={styles.ingredientsPreview}>
-          <Text style={styles.ingredientsLabel}>Ingredients:</Text>
-          <Text style={styles.ingredientsText} numberOfLines={2}>
-            {recipe.ingredients_grams.map(ing => ing.item).join(', ')}
-          </Text>
-        </View>
-
-       
-      </LinearGradient>
-    </TouchableOpacity>
-    </SafeAreaView>
-  );
 
   const renderRecipeModal = () => {
     if (!selectedRecipe || !modalVisible) return null;
@@ -498,7 +438,64 @@ export default function RecipeResults() {
           )}
 
           <View style={styles.recipesGrid}>
-            {recipes.map((recipe, index) => renderRecipeCard(recipe, index))}
+            {recipes.map((recipe, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.recipeCard}
+                onPress={() => handleRecipePress(recipe)}
+              >
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.8)']}
+                  style={styles.cardGradient}
+                >
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.recipeName} numberOfLines={2}>
+                      {recipe.name}
+                    </Text>
+                    <View style={styles.recipeMeta}>
+                      <View style={styles.metaItem}>
+                        <Ionicons name="time-outline" size={16} color="#6c757d" />
+                        <Text style={styles.metaText}>{recipe.time_minutes}m</Text>
+                      </View>
+                      <View style={styles.metaItem}>
+                        <Ionicons name="cash-outline" size={16} color="#6c757d" />
+                        <Text style={styles.metaText}>${recipe.cost.toFixed(2)}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {renderHealthRating(recipe.health_rating)}
+
+                  <View style={styles.nutritionRow}>
+                    <View style={styles.nutritionItem}>
+                      <Text style={styles.nutritionValue}>{recipe.calories}</Text>
+                      <Text style={styles.nutritionLabel}>cal</Text>
+                    </View>
+                    <View style={styles.nutritionItem}>
+                      <Text style={styles.nutritionValue}>{recipe.protein_g}g</Text>
+                      <Text style={styles.nutritionLabel}>protein</Text>
+                    </View>
+                    <View style={styles.nutritionItem}>
+                      <Text style={styles.nutritionValue}>{recipe.carbs_g}g</Text>
+                      <Text style={styles.nutritionLabel}>carbs</Text>
+                    </View>
+                    <View style={styles.nutritionItem}>
+                      <Text style={styles.nutritionValue}>{recipe.fat_g}g</Text>
+                      <Text style={styles.nutritionLabel}>fat</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.ingredientsPreview}>
+                    <Text style={styles.ingredientsLabel}>Ingredients:</Text>
+                    <Text style={styles.ingredientsText} numberOfLines={2}>
+                      {recipe.ingredients_grams.map(ing => ing.item).join(', ')}
+                    </Text>
+                  </View>
+
+                 
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
           </View>
         </ScrollView>
   

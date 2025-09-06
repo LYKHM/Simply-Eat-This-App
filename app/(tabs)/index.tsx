@@ -9,6 +9,8 @@ import { useSignIn, useAuth, useUser } from '@clerk/clerk-expo'
 import Meal from '@/components/Meal';
 import WeeklyPerformance from '@/components/WeeklyPerformance';
 import { router } from 'expo-router';
+import RevenueCatUI, {PAYWALL_RESULT} from 'react-native-purchases-ui'
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 
 function SwipeRow({ children, onDelete }: { children: React.ReactNode; onDelete: () => void }) {
@@ -74,6 +76,15 @@ type MealPlan = {
 };
 
 export default function HomeScreen() {
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await requestTrackingPermissionsAsync();
+      if (status === 'granted') {
+        console.log('Yay! I have user permission to track data');
+      }
+    })();
+  }, []);
 
   //Sneak peak into the data from the onboarding
   
@@ -557,11 +568,42 @@ export default function HomeScreen() {
     });
   };
   
+  /*
   const handleOption1 = () => {
+   // RevenueCatUI.presentPaywall()
    // closeModal();
     router.push('/modal');
     console.log('Option 1 selected');
   };
+  */
+
+  const isSubscribed = async () => {
+    const paywallResult = await RevenueCatUI.presentPaywallIfNeeded({requiredEntitlementIdentifier: 'pro'});
+    console.log('paywallResult', paywallResult);
+   
+    switch (paywallResult) {
+       case PAYWALL_RESULT.NOT_PRESENTED:
+           return true;
+       case PAYWALL_RESULT.ERROR:
+       case PAYWALL_RESULT.CANCELLED:
+           return false;
+       case PAYWALL_RESULT.PURCHASED:
+       case PAYWALL_RESULT.RESTORED:
+           return true;
+       default:
+           return false;
+   }
+ }
+
+
+const proAction = async () => {
+    console.log('proAction');
+    if (await isSubscribed()) {
+    console.log('proAction: isSubscribed');
+      router.push('/modal'); // What happense it its false? Will it return before it get it?
+    }
+  }
+  
   
   const handleOption2 = () => {
     //closeModal();
@@ -754,12 +796,12 @@ export default function HomeScreen() {
             </View>
             
             <View style={styles.modalOptions}>
-              <TouchableOpacity style={styles.modalOption} onPress={handleOption1}>
+              <TouchableOpacity style={styles.modalOption} onPress={proAction}>
                 <View style={styles.optionIcon}>
                   <Ionicons name="camera" size={32} color="#3b82f6" />
                 </View>
                 <Text style={styles.optionTitle}>AI Camera</Text>
-                <Text style={styles.optionSubtitle}>Take a photo of your fridge, and AI will suggest easy recipes using the ingredients you already have at home.</Text>
+                <Text style={styles.optionSubtitle}>Take a photo of your ingredients, and AI will suggest recipes.</Text>
               </TouchableOpacity>
               {/*  
               <TouchableOpacity style={styles.modalOption} onPress={handleOption2}>

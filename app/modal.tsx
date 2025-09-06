@@ -75,7 +75,7 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       
@@ -108,7 +108,7 @@ export default function App() {
         
       </View>
     </View>
-    </SafeAreaView>
+    
   );
 }
 

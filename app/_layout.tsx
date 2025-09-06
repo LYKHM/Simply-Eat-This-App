@@ -7,7 +7,11 @@ import { useEffect, useState } from 'react';
 //import 'react-native-reanimated';
 import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo'
 import { tokenCache } from '@clerk/clerk-expo/token-cache'
+import Purchases from 'react-native-purchases';
+import { Alert, Platform } from 'react-native';
 
+// Good for debugging the paywall
+//Purchases.setLogLevel(Purchases.LOG_LEVEL.VERBOSE);
 
 
 
@@ -83,6 +87,37 @@ export default function RootLayout() {
     }
     prepare();
   }, []);
+
+
+  // Configure RevenueCat
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      if(!process.env.EXPO_PUBLIC_RC_IOS) {
+        Alert.alert("Error configure RC", "RevenueCat API key for ios not provided")
+      }else{
+        
+        Purchases.configure({apiKey: process.env.EXPO_PUBLIC_RC_IOS});
+      }
+      
+    } else if (Platform.OS === 'android') {
+      if(!process.env.EXPO_PUBLIC_RC_ANDROID) {
+        Alert.alert("Error configure RC", "RevenueCat API key for ios not provided")
+      }else{
+        Purchases.configure({apiKey: process.env.EXPO_PUBLIC_RC_ANDROID});
+      }
+    }
+
+   // test fetching product
+
+   Purchases.getOfferings().then(console.log);
+
+   
+
+
+   
+
+  },[]);
 
 
   return <RootLayoutNav />;

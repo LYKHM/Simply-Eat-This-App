@@ -1,27 +1,37 @@
 {
   "expo": {
-    "name": "SimplyEatThis",
-    "slug": "SimplyEatThis",
+    "name": "Simply Eat This",
+    "slug": "Simply Eat This",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/SplashIcon.png",
+    "icon": "./assets/images/new-app-logo.png",
     "scheme": "simplyeatthis",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/new-splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.northstarapps.simplyeatthis",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "We use your data to personalize your experience and improve our services.",
+        "NSCameraUsageDescription": "This app needs access to your camera so it can scan food items with AI."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -37,10 +47,17 @@
         {
           "cameraPermission": "Allow Simply Eat This to access your camera"
         }
-      ]
+      ],
+      "expo-tracking-transparency"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "710cb473-ac95-44bd-814e-827e0ba6dcd1"
+      }
     }
   }
 }
