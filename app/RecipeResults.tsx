@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const { width } = Dimensions.get('window');
 
 interface Recipe {
+  id: number;
   name: string;
   instructions: string;
   ingredients_grams: Array<{ item: string; grams: number }>;
@@ -32,6 +33,7 @@ interface Recipe {
   time_minutes: number;
   allergy_warning: string;
   cost: number;
+  isMostPopular: boolean;
 }
 
 interface RecipeResponse {
@@ -51,7 +53,6 @@ export default function RecipeResults() {
     const [fadeAnim] = useState(new Animated.Value(0));
     const [diet, setDiet] = useState<string>('');
     const [calories, setCalories] = useState<number>(0);
-
 
   
     
@@ -125,6 +126,7 @@ export default function RecipeResults() {
     
             const data: RecipeResponse = await response.json();
             
+         
             setRecipes(data.meals);
             setIngredientsInPhoto(data.ingredientsInPhoto);
             setLoading(false);
@@ -165,6 +167,47 @@ export default function RecipeResults() {
           setModalVisible(false);
           setSelectedRecipe(null);
         });
+      };
+
+      const handleSaveRecipe = async () => {
+        if (!selectedRecipe) return;
+
+        try {
+          // Get existing saved recipes
+          const savedRecipesString = await AsyncStorage.getItem('savedRecipes');
+          const savedRecipes = savedRecipesString ? JSON.parse(savedRecipesString) : [];
+
+          // Check if recipe already exists (by name)
+          const existingIndex = savedRecipes.findIndex((recipe: Recipe) => recipe.name === selectedRecipe.name);
+          
+          if (existingIndex >= 0) {
+            // Update existing recipe with ID
+            const recipeWithId = {
+              ...selectedRecipe,
+              id: savedRecipes[existingIndex].id || Date.now() + Math.random() // Keep existing ID or create new one
+            };
+            savedRecipes[existingIndex] = recipeWithId;
+            console.log('Recipe updated:', selectedRecipe.name);
+          } else {
+            // Add new recipe with unique ID
+            const recipeWithId = {
+              ...selectedRecipe,
+              id: Date.now() + Math.random() // Generate unique ID
+            };
+            savedRecipes.push(recipeWithId);
+            console.log('Recipe saved:', selectedRecipe.name);
+          }
+
+          // Save back to AsyncStorage
+          await AsyncStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
+          
+          // You could add a toast notification here
+          alert(`Recipe "${selectedRecipe.name}" saved successfully!`);
+          
+        } catch (error) {
+          console.error('Error saving recipe:', error);
+          alert('Failed to save recipe');
+        }
       };
 
       
@@ -215,14 +258,14 @@ export default function RecipeResults() {
         );
       };
 
-
+ 
 
         // ===== RENDER LOGIC =====
     
     // 1. LOADING SCREEN - Show while processing photo
     if (loading) {
       return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
         <LinearGradient
           colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
           style={styles.container}
@@ -247,7 +290,7 @@ export default function RecipeResults() {
     // 2. ERROR SCREEN - Show if something goes wrong
     if (error) {
       return (
-        <SafeAreaView style={{flex: 1}}>
+        <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
         <LinearGradient
           colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
           style={styles.container}
@@ -276,7 +319,7 @@ export default function RecipeResults() {
     // 3. NO RECIPES SCREEN - Show if API returns empty results
     if (!recipes || recipes.length === 0) {
       return (
-        <SafeAreaView style={{flex: 1}}>
+        <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
         <LinearGradient
           colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
           style={styles.container}
@@ -331,10 +374,23 @@ export default function RecipeResults() {
         >
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{selectedRecipe.name}</Text>
-              <TouchableOpacity style={styles.closeModalButton} onPress={handleCloseRecipe}>
-                <Ionicons name="close" size={24} color="#6c757d" />
-              </TouchableOpacity>
+              <View style={styles.modalTitleContainer}>
+                <Text style={styles.modalTitle}>{selectedRecipe.name}</Text>
+                {selectedRecipe.isMostPopular && (
+                  <View style={styles.modalPopularBadge}>
+                    <Ionicons name="star" size={14} color="#FFD700" />
+                    <Text style={styles.modalPopularText}>Most Popular</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.modalHeaderButtons}>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveRecipe}>
+                  <Ionicons name="bookmark-outline" size={20} color="#28a745" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.closeModalButton} onPress={handleCloseRecipe}>
+                  <Ionicons name="close" size={24} color="#6c757d" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.modalMeta}>
@@ -403,105 +459,116 @@ export default function RecipeResults() {
      // 4. MAIN RECIPES SCREEN - Show when recipes are loaded successfully
      if(recipes){
         return (
-            <LinearGradient
-              colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
-              style={styles.container}
-            >
-        <StatusBar barStyle="dark-content" />
-        
-        {/* Header with back button */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color="#212529" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Recipe Suggestions</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-  
-        {/* Recipe list */}
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+
+        <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
+          <LinearGradient
+                colors={['#f8f9fa', '#e9ecef', '#dee2e6']}
+                style={styles.container}
+              >
+          <StatusBar barStyle="dark-content" />
           
-          {/* Ingredients Detected Box */}
-          {ingredientsInPhoto && (
-            <View style={styles.ingredientsBox}>
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
-                style={styles.ingredientsGradient}
-              >
-                <View style={styles.ingredientsHeader}>
-                  <Ionicons name="eye-outline" size={20} color="#495057" />
-                  <Text style={styles.ingredientsTitle}>Ingredients Detected</Text>
-                </View>
-                <Text style={styles.ingredientsText}>{ingredientsInPhoto}</Text>
-              </LinearGradient>
-            </View>
-          )}
-
-          <View style={styles.recipesGrid}>
-            {recipes.map((recipe, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.recipeCard}
-                onPress={() => handleRecipePress(recipe)}
-              >
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.8)']}
-                  style={styles.cardGradient}
-                >
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.recipeName} numberOfLines={2}>
-                      {recipe.name}
-                    </Text>
-                    <View style={styles.recipeMeta}>
-                      <View style={styles.metaItem}>
-                        <Ionicons name="time-outline" size={16} color="#6c757d" />
-                        <Text style={styles.metaText}>{recipe.time_minutes}m</Text>
-                      </View>
-                      <View style={styles.metaItem}>
-                        <Ionicons name="cash-outline" size={16} color="#6c757d" />
-                        <Text style={styles.metaText}>${recipe.cost.toFixed(2)}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {renderHealthRating(recipe.health_rating)}
-
-                  <View style={styles.nutritionRow}>
-                    <View style={styles.nutritionItem}>
-                      <Text style={styles.nutritionValue}>{recipe.calories}</Text>
-                      <Text style={styles.nutritionLabel}>cal</Text>
-                    </View>
-                    <View style={styles.nutritionItem}>
-                      <Text style={styles.nutritionValue}>{recipe.protein_g}g</Text>
-                      <Text style={styles.nutritionLabel}>protein</Text>
-                    </View>
-                    <View style={styles.nutritionItem}>
-                      <Text style={styles.nutritionValue}>{recipe.carbs_g}g</Text>
-                      <Text style={styles.nutritionLabel}>carbs</Text>
-                    </View>
-                    <View style={styles.nutritionItem}>
-                      <Text style={styles.nutritionValue}>{recipe.fat_g}g</Text>
-                      <Text style={styles.nutritionLabel}>fat</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.ingredientsPreview}>
-                    <Text style={styles.ingredientsLabel}>Ingredients:</Text>
-                    <Text style={styles.ingredientsText} numberOfLines={2}>
-                      {recipe.ingredients_grams.map(ing => ing.item).join(', ')}
-                    </Text>
-                  </View>
-
-                 
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
+          {/* Header with back button */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="#212529" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Recipe Suggestions</Text>
+            <View style={styles.headerSpacer} />
           </View>
-        </ScrollView>
-  
-        {/* Recipe detail modal (shows when recipe is tapped) */}
-        {renderRecipeModal()}
-      </LinearGradient>
+    
+          {/* Recipe list */}
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            
+            {/* Ingredients Detected Box */}
+            {ingredientsInPhoto && (
+              <View style={styles.ingredientsBox}>
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
+                  style={styles.ingredientsGradient}
+                >
+                  <View style={styles.ingredientsHeader}>
+                    <Ionicons name="eye-outline" size={20} color="#495057" />
+                    <Text style={styles.ingredientsTitle}>Ingredients Detected</Text>
+                  </View>
+                  <Text style={styles.ingredientsText}>{ingredientsInPhoto}</Text>
+                </LinearGradient>
+              </View>
+            )}
+
+            <View style={styles.recipesGrid}>
+              {recipes.map((recipe, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.recipeCard}
+                  onPress={() => handleRecipePress(recipe)}
+                >
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.8)']}
+                    style={styles.cardGradient}
+                  >
+                    <View style={styles.cardHeader}>
+                      <View style={styles.recipeNameContainer}>
+                        <Text style={styles.recipeName} numberOfLines={2}>
+                          {recipe.name}
+                        </Text>
+                        {recipe.isMostPopular && (
+                          <View style={styles.popularBadge}>
+                            <Ionicons name="star" size={12} color="#FFD700" />
+                            <Text style={styles.popularText}>Most Popular</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.recipeMeta}>
+                        <View style={styles.metaItem}>
+                          <Ionicons name="time-outline" size={16} color="#6c757d" />
+                          <Text style={styles.metaText}>{recipe.time_minutes}m</Text>
+                        </View>
+                        <View style={styles.metaItem}>
+                          <Ionicons name="cash-outline" size={16} color="#6c757d" />
+                          <Text style={styles.metaText}>${recipe.cost.toFixed(2)}</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {renderHealthRating(recipe.health_rating)}
+
+                    <View style={styles.nutritionRow}>
+                      <View style={styles.nutritionItem}>
+                        <Text style={styles.nutritionValue}>{recipe.calories}</Text>
+                        <Text style={styles.nutritionLabel}>cal</Text>
+                      </View>
+                      <View style={styles.nutritionItem}>
+                        <Text style={styles.nutritionValue}>{recipe.protein_g}g</Text>
+                        <Text style={styles.nutritionLabel}>protein</Text>
+                      </View>
+                      <View style={styles.nutritionItem}>
+                        <Text style={styles.nutritionValue}>{recipe.carbs_g}g</Text>
+                        <Text style={styles.nutritionLabel}>carbs</Text>
+                      </View>
+                      <View style={styles.nutritionItem}>
+                        <Text style={styles.nutritionValue}>{recipe.fat_g}g</Text>
+                        <Text style={styles.nutritionLabel}>fat</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.ingredientsPreview}>
+                      <Text style={styles.ingredientsLabel}>Ingredients:</Text>
+                      <Text style={styles.ingredientsText} numberOfLines={2}>
+                        {recipe.ingredients_grams.map(ing => ing.item).join(', ')}
+                      </Text>
+                    </View>
+
+                  
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+    
+          {/* Recipe detail modal (shows when recipe is tapped) */}
+          {renderRecipeModal()}
+        </LinearGradient>
+       </SafeAreaView>
             
         )
      }
@@ -517,7 +584,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -540,6 +607,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    
   },
   headerTitle: {
     fontSize: 24,
@@ -547,6 +615,7 @@ const styles = StyleSheet.create({
     color: '#212529',
     textAlign: 'center',
     letterSpacing: -0.5,
+    
   },
   headerSpacer: {
     width: 44,
@@ -634,12 +703,32 @@ const styles = StyleSheet.create({
   cardHeader: {
     marginBottom: 20,
   },
+  recipeNameContainer: {
+    marginBottom: 12,
+  },
   recipeName: {
     fontSize: 20,
     fontWeight: '700',
     color: '#212529',
-    marginBottom: 12,
     lineHeight: 28,
+  },
+  popularBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  popularText: {
+    fontSize: 12,
+    color: '#B8860B',
+    fontWeight: '600',
+    marginLeft: 4,
   },
   recipeMeta: {
     flexDirection: 'row',
@@ -758,12 +847,46 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 24,
   },
+  modalTitleContainer: {
+    flex: 1,
+    marginRight: 20,
+  },
   modalTitle: {
     fontSize: 26,
     fontWeight: '700',
     color: '#212529',
-    flex: 1,
-    marginRight: 20,
+    marginBottom: 8,
+  },
+  modalPopularBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.3)',
+  },
+  modalPopularText: {
+    fontSize: 14,
+    color: '#B8860B',
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  modalHeaderButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  saveButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(40, 167, 69, 0.3)',
   },
   closeModalButton: {
     width: 44,

@@ -231,7 +231,7 @@ export default function NutritionTargetsScreen() {
   const { carbs, fat, protein } = calculateMacros();
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
     <LinearGradient
       colors={['#ffffff', '#fef7ff', '#f0f9ff']}
       style={styles.container}

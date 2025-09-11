@@ -30,7 +30,7 @@ export default function MealCard({ item }: MealCardProps) {
 			</View>
 		</View>
 	);
-}
+} 
 
 const styles = StyleSheet.create({
 	card: {

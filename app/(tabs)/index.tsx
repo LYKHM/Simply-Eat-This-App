@@ -1,15 +1,17 @@
 import React, { useMemo, useState, useEffect,useCallback, useRef, use } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Animated, PanResponder, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Pressable, ScrollView, Animated, PanResponder, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DonutChart from '@/components/DonutChart';
 import MealCard, { MealItem } from '@/components/MealCard';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSignIn, useAuth, useUser } from '@clerk/clerk-expo'
 import Meal from '@/components/Meal';
+import EmptyMeal from '@/components/EmptyMeal';
 import WeeklyPerformance from '@/components/WeeklyPerformance';
 import { router } from 'expo-router';
 import RevenueCatUI, {PAYWALL_RESULT} from 'react-native-purchases-ui'
+
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 
@@ -76,6 +78,8 @@ type MealPlan = {
 };
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth } = Dimensions.get('window');
 
   useEffect(() => {
     (async () => {
@@ -84,6 +88,19 @@ export default function HomeScreen() {
         console.log('Yay! I have user permission to track data');
       }
     })();
+  }, []);
+
+  // Load daily meals on component mount
+  useEffect(() => {
+    const initializeMeals = async () => {
+      const hasDailyMeals = await loadDailyMeals();
+      if (!hasDailyMeals) {
+        // If no daily meals exist, create empty meal plan
+        createEmptyMealPlan();
+      }
+    };
+    
+    initializeMeals();
   }, []);
 
   //Sneak peak into the data from the onboarding
@@ -107,9 +124,16 @@ export default function HomeScreen() {
 
   const { user, isLoaded } = useUser();
   //console.log("Do i have the suer data in the home screen? user: ", user)
-  const [mealPlanData, setMealPlanData] = useState<MealPlan | null>(null);
+  // Separate states for different meal plan types
+  const [generatedMealPlan, setGeneratedMealPlan] = useState<MealPlan | null>(null);
+  const [emptyMealPlan, setEmptyMealPlan] = useState<MealPlan | null>(null);
+  const [mealPlanType, setMealPlanType] = useState<'generated' | 'empty' | null>(null);
   const [time, setTime] = useState(20);
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Computed value for current meal plan data
+  const mealPlanData = mealPlanType === 'generated' ? generatedMealPlan : emptyMealPlan;
+  const isEmptyPlan = mealPlanType === 'empty';
 
   // Add this before the render to debug
   
@@ -242,7 +266,8 @@ export default function HomeScreen() {
         const mealPlan = await response.json();
         
         // The meal plan is now saved to the database and returned
-        setMealPlanData(mealPlan);
+        setGeneratedMealPlan(mealPlan);
+        setMealPlanType('generated');
         
         // Record daily performance after meal plan is generated
         await recordDailyPerformance();
@@ -279,7 +304,8 @@ export default function HomeScreen() {
       console.log("Yesterday's meal plan copied:", data);
       
       // Set the copied meal plan as the current meal plan
-      setMealPlanData(data);
+      setGeneratedMealPlan(data);
+      setMealPlanType('generated');
       
       // Initialize checkmarks for the copied meals
       if (data.meals) {
@@ -296,6 +322,157 @@ export default function HomeScreen() {
       console.error('Error copying yesterdays meal plan:', error);
     }
   }
+
+  const createEmptyMealPlan = async () => {
+    const emptyMealPlan: MealPlan = {
+      meals: [
+        {
+          label: "Breakfast",
+          labelCalories: 0,
+          diet: "mixed",
+          meals: [
+            { recipeId: 0, image: "", name: "", scaledCalories: 0, scaledProtein: 0, scaledCarbs: 0, scaledFat: 0, servings: 0, diet: "" },
+            { recipeId: 0, image: "", name: "", scaledCalories: 0, scaledProtein: 0, scaledCarbs: 0, scaledFat: 0, servings: 0, diet: "" }
+          ]
+        },
+        {
+          label: "Lunch", 
+          labelCalories: 0,
+          diet: "mixed",
+          meals: [
+            { recipeId: 0, image: "", name: "", scaledCalories: 0, scaledProtein: 0, scaledCarbs: 0, scaledFat: 0, servings: 0, diet: "" },
+            { recipeId: 0, image: "", name: "", scaledCalories: 0, scaledProtein: 0, scaledCarbs: 0, scaledFat: 0, servings: 0, diet: "" }
+          ]
+        },
+        {
+          label: "Dinner",
+          labelCalories: 0, 
+          diet: "mixed",
+          meals: [
+            { recipeId: 0, image: "", name: "", scaledCalories: 0, scaledProtein: 0, scaledCarbs: 0, scaledFat: 0, servings: 0, diet: "" },
+            { recipeId: 0, image: "", name: "", scaledCalories: 0, scaledProtein: 0, scaledCarbs: 0, scaledFat: 0, servings: 0, diet: "" }
+          ]
+        }
+      ],
+      TARGET_PER_MEAL: macroLimits.calories / 3,
+      totalDailyCalories: 0,
+      totalDailyProtein: 0,
+      totalDailyCarbs: 0,
+      totalDailyFat: 0
+    };
+
+    setEmptyMealPlan(emptyMealPlan);
+    setMealPlanType('empty');
+    
+    // Initialize empty checkmarks
+    const initialCheckedMeals = emptyMealPlan.meals.map(() => [false, false]);
+    setCheckedMeals(initialCheckedMeals);
+
+    // Save the empty meal plan to AsyncStorage
+    await saveDailyMeals(emptyMealPlan);
+  };
+
+  // Handle recipe selection from EmptyMeal (saved recipes from AsyncStorage)
+  const handleSavedRecipeSelected = async (groupIndex: number, mealIndex: number, savedRecipe: any) => {
+    if (!emptyMealPlan) return;
+
+    const updatedMealPlan = { ...emptyMealPlan };
+    const mealGroup = updatedMealPlan.meals[groupIndex];
+    
+    // Convert saved recipe format to meal plan format
+    mealGroup.meals[mealIndex] = {
+      recipeId: savedRecipe.id,
+      image: '', // No image in saved recipes
+      name: savedRecipe.name,
+      scaledCalories: savedRecipe.calories, // Use original calories
+      scaledProtein: savedRecipe.protein_g, // Use original protein_g
+      scaledCarbs: savedRecipe.carbs_g, // Use original carbs_g
+      scaledFat: savedRecipe.fat_g, // Use original fat_g
+      servings: 1, // Default to 1 serving
+      diet: 'anything' // Default diet
+    };
+
+    // Recalculate group totals
+    mealGroup.labelCalories = mealGroup.meals.reduce((sum, meal) => sum + meal.scaledCalories, 0);
+
+    // Recalculate daily totals
+    const allMeals = updatedMealPlan.meals.flatMap(group => group.meals);
+    updatedMealPlan.totalDailyCalories = allMeals.reduce((sum, meal) => sum + meal.scaledCalories, 0);
+    updatedMealPlan.totalDailyProtein = allMeals.reduce((sum, meal) => sum + meal.scaledProtein, 0);
+    updatedMealPlan.totalDailyCarbs = allMeals.reduce((sum, meal) => sum + meal.scaledCarbs, 0);
+    updatedMealPlan.totalDailyFat = allMeals.reduce((sum, meal) => sum + meal.scaledFat, 0);
+
+    setEmptyMealPlan(updatedMealPlan);
+
+    // Save to daily meals AsyncStorage
+    await saveDailyMeals(updatedMealPlan);
+  };
+
+  // Handle recipe selection from backend (scaled recipes from generate button)
+  const handleRecipeSelected = (groupIndex: number, mealIndex: number, recipe: any) => {
+    if (!generatedMealPlan) return;
+
+    const updatedMealPlan = { ...generatedMealPlan };
+    const mealGroup = updatedMealPlan.meals[groupIndex];
+    
+    // Update the specific meal slot (backend already provides scaled values)
+    mealGroup.meals[mealIndex] = {
+      recipeId: recipe.id,
+      image: recipe.image,
+      name: recipe.name,
+      scaledCalories: recipe.scaledCalories,
+      scaledProtein: recipe.scaledProtein,
+      scaledCarbs: recipe.scaledCarbs,
+      scaledFat: recipe.scaledFat,
+      servings: recipe.servings,
+      diet: recipe.diet
+    };
+
+    // Recalculate group totals
+    mealGroup.labelCalories = mealGroup.meals.reduce((sum, meal) => sum + meal.scaledCalories, 0);
+
+    // Recalculate daily totals
+    const allMeals = updatedMealPlan.meals.flatMap(group => group.meals);
+    updatedMealPlan.totalDailyCalories = allMeals.reduce((sum, meal) => sum + meal.scaledCalories, 0);
+    updatedMealPlan.totalDailyProtein = allMeals.reduce((sum, meal) => sum + meal.scaledProtein, 0);
+    updatedMealPlan.totalDailyCarbs = allMeals.reduce((sum, meal) => sum + meal.scaledCarbs, 0);
+    updatedMealPlan.totalDailyFat = allMeals.reduce((sum, meal) => sum + meal.scaledFat, 0);
+
+    setGeneratedMealPlan(updatedMealPlan);
+  };
+
+  // Save daily meals to AsyncStorage
+  const saveDailyMeals = async (mealPlan: MealPlan) => {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const dailyMealsKey = `dailyMeals_${today}`;
+      await AsyncStorage.setItem(dailyMealsKey, JSON.stringify(mealPlan));
+      console.log('Daily meals saved for', today);
+    } catch (error) {
+      console.error('Error saving daily meals:', error);
+    }
+  };
+
+  // Load daily meals from AsyncStorage
+  const loadDailyMeals = async () => {
+  console.log("Loading daily meals from AsyncStorage");
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const dailyMealsKey = `dailyMeals_${today}`;
+      const savedMeals = await AsyncStorage.getItem(dailyMealsKey);
+      
+      if (savedMeals) {
+        const mealPlan = JSON.parse(savedMeals);
+        setEmptyMealPlan(mealPlan);
+        console.log('Daily meals loaded for', today);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error loading daily meals:', error);
+      return false;
+    }
+  };
 
   // Record daily performance
   const recordDailyPerformance = async () => {
@@ -358,6 +535,8 @@ export default function HomeScreen() {
       if (!user) return;
   
       try {
+        // First, try to load from backend (for generated meal plans)
+        console.log("Loading meal plan from backend");
         const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/daily-recipes/${user.id}`, {
           method: 'GET',
           headers: {
@@ -367,13 +546,39 @@ export default function HomeScreen() {
   
         if (response.ok) {
           const theUsersDailyMealPlan = await response.json();
-         // console.log("✅ Daily meal plan loaded:", theUsersDailyMealPlan);
-          setMealPlanData(theUsersDailyMealPlan);
+          
+          // Check if this is an empty plan from backend (no meals)
+          if (!theUsersDailyMealPlan.meals || theUsersDailyMealPlan.meals.length === 0) {
+            // No meals in database - check AsyncStorage for user's custom empty meal plan
+            console.log("No meals in database, checking AsyncStorage for empty meal plan");
+            const hasDailyMeals = await loadDailyMeals();
+            if (hasDailyMeals) {
+              // Found empty meal plan in AsyncStorage
+              setMealPlanType('empty');
+            }
+            // If no meals found anywhere, don't set any meal plan type
+            // User will see the buttons to choose
+          } else {
+            // Found meals in database - this is a generated meal plan
+            console.log("✅ Generated meal plan loaded from database");
+            setGeneratedMealPlan(theUsersDailyMealPlan);
+            setMealPlanType('generated');
+          }
         } else {
           console.error('Failed to load daily meal plan:', response.status);
+          // Check AsyncStorage as fallback
+          const hasDailyMeals = await loadDailyMeals();
+          if (hasDailyMeals) {
+            setMealPlanType('empty');
+          }
         }
       } catch (error) {
         console.error('Error loading daily meal plan:', error);
+        // Check AsyncStorage as fallback
+        const hasDailyMeals = await loadDailyMeals();
+        if (hasDailyMeals) {
+          setMealPlanType('empty');
+        }
       }
     };
   
@@ -577,7 +782,7 @@ export default function HomeScreen() {
   };
   */
 
-  const isSubscribed = async () => {
+const isSubscribed = async () => {
     const paywallResult = await RevenueCatUI.presentPaywallIfNeeded({requiredEntitlementIdentifier: 'pro'});
     console.log('paywallResult', paywallResult);
    
@@ -594,7 +799,6 @@ export default function HomeScreen() {
            return false;
    }
  }
-
 
 const proAction = async () => {
     console.log('proAction');
@@ -643,9 +847,21 @@ const proAction = async () => {
   }, [mealPlanData]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <WeeklyPerformance 
+    <View style={{ flex: 1 }}>
+    
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
+        <ScrollView contentContainerStyle={styles.container}>
+
+        <View>
+            <Image 
+              source={require('@/assets/images/new-splash-icon.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+
+
+        <WeeklyPerformance
           currentWeekCalories={currentWeekCalories}
           previousWeekCalories={previousWeekCalories}
           targetCalories={macroLimits.calories || 2000}
@@ -698,7 +914,7 @@ const proAction = async () => {
           </View>
           <View style={[styles.metricCard, { borderColor: '#f7f5d9' }] }>
             <DonutChart value={totals.fat} total={macroLimits.fat} size={92} color="#f5d14e">
-              <MaterialCommunityIcons name="bottle-wine" size={18} color="#111" />
+              <MaterialCommunityIcons name="peanut" size={18} color="#111" />
 
               <Text style={styles.metricValue}>
                 {totals.fat > macroLimits.fat
@@ -721,8 +937,9 @@ const proAction = async () => {
             </Pressable>
           )}
         </View>
+        {/*{(!mealPlanData || !mealPlanData.meals || mealPlanData.meals.length === 0) && ( */}
 
-        {(!mealPlanData || !mealPlanData.meals || mealPlanData.meals.length === 0) && (
+        {!mealPlanType && (
           <>
             <Pressable style={styles.primaryBtn} onPress={GenerateDailyMealPlan}>
               <Text style={styles.primaryBtnText}>Generate Day</Text>
@@ -730,6 +947,10 @@ const proAction = async () => {
           
             <Pressable style={styles.secondaryBtn} onPress={copyYesterDayMealPlan}>
               <Text style={styles.secondaryBtnText}>Copy Yesterday</Text>
+            </Pressable>
+
+            <Pressable style={styles.tertiaryBtn} onPress={createEmptyMealPlan}>
+              <Text style={styles.tertiaryBtnText}>Create Empty Plan</Text>
             </Pressable>
            
           </>
@@ -740,28 +961,45 @@ const proAction = async () => {
             <Text style={styles.mealHeading}>
               {group.label}: {group.labelCalories.toFixed()} kcal
             </Text>
-            {group.meals.map((meal, j) => (
-              <Meal
-                key={meal.recipeId}
-                groupIndex={i}
-                mealIndex={j}
-                recipeId={meal.recipeId}
-                recipeObj={getMealByRecipeId(meal.recipeId)}
-                foodImage={meal.image}
-                foodTitle={meal.name}
-                foodCalories={meal.scaledCalories}
-                foodProtein={meal.scaledProtein}
-                foodCarbs={meal.scaledCarbs}
-                foodFat={meal.scaledFat}
-                foodServings={meal.servings}
-                TargetCalories={mealPlanData?.TARGET_PER_MEAL}
-                foodDiet={meal.diet}
-                time={time}
-                clerk_id={user?.id || ''}
-                isChecked={checkedMeals[i]?.[j] || false}
-                onToggle={handleMealToggle}
-              />
-            ))}
+            {group.meals.map((meal, j) => {
+              // Check if this is an empty slot in an empty plan
+              if (isEmptyPlan && meal.recipeId === 0) {
+                return (
+                  <EmptyMeal
+                    key={`empty-${i}-${j}`}
+                    groupIndex={i}
+                    mealIndex={j}
+                    mealLabel={group.label}
+                    targetCalories={mealPlanData?.TARGET_PER_MEAL || 0}
+                    onRecipeSelected={handleSavedRecipeSelected}
+                  />
+                );
+              }
+              
+              // Regular meal component
+              return (
+                <Meal
+                  key={`meal-${i}-${j}-${meal.recipeId}`}
+                  groupIndex={i}
+                  mealIndex={j}
+                  recipeId={meal.recipeId}
+                  recipeObj={getMealByRecipeId(meal.recipeId)}
+                  foodImage={meal.image}
+                  foodTitle={meal.name}
+                  foodCalories={meal.scaledCalories}
+                  foodProtein={meal.scaledProtein}
+                  foodCarbs={meal.scaledCarbs}
+                  foodFat={meal.scaledFat}
+                  foodServings={meal.servings}
+                  TargetCalories={mealPlanData?.TARGET_PER_MEAL}
+                  foodDiet={meal.diet}
+                  time={time}
+                  clerk_id={user?.id || ''}
+                  isChecked={checkedMeals[i]?.[j] || false}
+                  onToggle={handleMealToggle}
+                />
+              );
+            })}
           </View>
         ))}
 
@@ -816,12 +1054,21 @@ const proAction = async () => {
           </Animated.View>
         </Animated.View>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 16 },
+  logoContainer: {
+    width: '100%',
+    backgroundColor: 'red',
+  },
+  logo: {
+    width: 40,
+    height: 40,
+  },
   heroCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 20,
@@ -913,6 +1160,15 @@ const styles = StyleSheet.create({
     borderColor: '#d8d8d8',
   },
   secondaryBtnText: { fontWeight: '700', color: '#555' },
+  tertiaryBtn: {
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  tertiaryBtnText: { fontWeight: '700', color: '#6c757d' },
 
   fab: {
     position: 'absolute',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { Text, View } from '@/components/Themed';
 import { useRouter } from 'expo-router';
 import { useClerk } from '@clerk/clerk-expo';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SettingItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -16,6 +17,21 @@ interface SettingItemProps {
   switchValue?: boolean;
   onSwitchChange?: (value: boolean) => void;
   showArrow?: boolean;
+}
+
+interface Recipe {
+  name: string;
+  instructions: string;
+  ingredients_grams: Array<{ item: string; grams: number }>;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  health_rating: number;
+  time_minutes: number;
+  allergy_warning: string;
+  cost: number;
+  isMostPopular: boolean;
 }
 
 const SettingItem: React.FC<SettingItemProps> = ({
@@ -56,6 +72,65 @@ const SettingItem: React.FC<SettingItemProps> = ({
 );
 
 export default function SettingsScreen() {
+
+
+useEffect(() => {
+  const loadSavedRecipes = async () => {
+    try {
+      const savedRecipesString = await AsyncStorage.getItem('savedRecipes');
+      const savedRecipes = savedRecipesString ? JSON.parse(savedRecipesString) : [];
+      
+      console.log('All saved recipes:', JSON.stringify(savedRecipes, null, 2));
+        
+    } catch (error) {
+      console.error('Error loading saved recipes:', error);
+    }
+  };
+
+  loadSavedRecipes();
+}, []);
+
+/*
+useEffect(() => {
+  const clearSavedRecipes = async () => {
+    try {
+      await AsyncStorage.removeItem('savedRecipes');
+      console.log('Saved recipes cleared successfully');
+    } catch (error) {
+      console.error('Error clearing saved recipes:', error);
+    }
+  };
+
+  clearSavedRecipes();
+}, []);
+*/
+
+/*
+useEffect(() => {
+  const getSpecificRecipe = async (recipeName: string) => {
+    try {
+      const savedRecipesString = await AsyncStorage.getItem('savedRecipes');
+      const savedRecipes = savedRecipesString ? JSON.parse(savedRecipesString) : [];
+      
+      const recipe = savedRecipes.find((r: Recipe) => r.name === recipeName);
+      if (recipe) {
+        console.log('Found recipe:', JSON.stringify(recipe, null, 2));
+        // Use recipe here
+      } else {
+        console.log('Recipe not found');
+      }
+      
+    } catch (error) {
+      console.error('Error finding recipe:', error);
+    }
+  };
+
+  getSpecificRecipe('Oat and Carrot Porridge');
+}, []);
+*/
+
+
+
   const [remindersEnabled, setRemindersEnabled] = React.useState(true);
   const router = useRouter();
   const { signOut } = useClerk();
@@ -87,6 +162,8 @@ export default function SettingsScreen() {
       router.push('/weight-goal');
     } else if (settingName === 'Account Information') {
       router.push('/account-information');
+    } else if (settingName === 'Terms of Service') {
+      router.push('/terms-of-service');
     } else if (settingName === 'Logout') {
       // Show confirmation dialog before signing out
     }
@@ -94,7 +171,7 @@ export default function SettingsScreen() {
 
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
     <LinearGradient
       colors={['#ffffff', '#fef7ff', '#f0f9ff']}
       style={styles.container}
@@ -201,6 +278,17 @@ export default function SettingsScreen() {
           </View>
         </View>
         */}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Legal</Text>
+          <View style={styles.sectionContent}>
+            <SettingItem
+              icon="document-text-outline"
+              title="Terms & Policies"
+              onPress={() => handleSettingPress('Terms of Service')}
+            />
+          </View>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Info</Text>

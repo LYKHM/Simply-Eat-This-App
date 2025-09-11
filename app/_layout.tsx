@@ -11,7 +11,7 @@ import Purchases from 'react-native-purchases';
 import { Alert, Platform } from 'react-native';
 
 // Good for debugging the paywall
-//Purchases.setLogLevel(Purchases.LOG_LEVEL.VERBOSE);
+
 
 
 
@@ -53,6 +53,7 @@ function RootLayoutNav() {
               <Stack.Screen name="diet-type" options={{ headerShown: false }} />
               <Stack.Screen name="nutrition-targets" options={{ headerShown: false }} />
               <Stack.Screen name="weight-goal" options={{ headerShown: false }} />
+              <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
             </Stack>
         </ThemeProvider>
       </ClerkLoaded>
@@ -110,7 +111,7 @@ export default function RootLayout() {
 
    // test fetching product
 
-   Purchases.getOfferings().then(console.log);
+ 
 
    
 

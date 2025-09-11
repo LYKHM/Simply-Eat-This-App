@@ -457,7 +457,7 @@ const Onboarding = () => {
       colors={['#ffffff', '#e3f2fd', '#fce4ec']}
       style={styles.container}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         
         {renderProgressBar()}
@@ -498,9 +498,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  safeArea: {
-    flex: 1,
-  },
+  
   progressContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,

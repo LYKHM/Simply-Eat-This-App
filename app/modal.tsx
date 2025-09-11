@@ -46,7 +46,7 @@ export default function App() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView style={{flex: 1}}>
+      <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
       <View style={styles.permissionContainer}>
         <View style={styles.permissionCard}>
           <View style={styles.permissionIcon}>
@@ -245,9 +245,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#fff',
   },
   flipButton: {

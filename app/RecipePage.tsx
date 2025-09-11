@@ -124,7 +124,7 @@ const RecipePage = () => {
   const fatPercent = (fat / total) * 100;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{flex: 1, backgroundColor: '#F9FAFB'}} edges={['top', 'left', 'right']}>
       <ScrollView  contentContainerStyle={styles.contentContainer}>
         {/* Header */}
         <View style={styles.header}>
@@ -259,10 +259,7 @@ const RecipePage = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB'
-  },
+ 
   contentContainer: {
     padding: 16,
     paddingBottom: 32,

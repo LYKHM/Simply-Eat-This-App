@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Simply Eat This",
-    "slug": "Simply Eat This",
+    "slug": "SimplyEatThis",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/new-app-logo.png",
@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/new-splash-icon.png",
+      "image": "./assets/images/NewSplashIconFoxy.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

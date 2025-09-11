@@ -160,11 +160,9 @@ const Meal: React.FC<MealProps> = ({
 
           {/* Food Image */}
           <View style={styles.imageContainer}>
-            <Image 
-              source={{ uri: newRecipe ? refreshedRecipe.image : foodImage }}
-              style={styles.foodImage}
-              resizeMode="cover"
-            />
+            <View style={[styles.foodImage, styles.placeholderImage]}>
+              <Ionicons name="restaurant" size={32} color="#9ca3af" />
+            </View>
           </View>
 
           {/* Meal Info */}
@@ -279,6 +277,11 @@ const styles = StyleSheet.create({
   foodImage: {
     width: '100%',
     height: '100%',
+  },
+  placeholderImage: {
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoContainer: {
     flex: 1,
