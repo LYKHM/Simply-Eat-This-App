@@ -50,6 +50,29 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="grocery"
+        options={{
+          title: 'Grocery List',
+          tabBarIcon: ({ color }) => <TabBarIcon name="shopping-basket" color={color} />,
+          /*
+          headerRight: () => (
+            <Link href="/modal" asChild>
+              <Pressable>
+                {({ pressed }) => (
+                  <FontAwesome
+                    name="info-circle"
+                    size={25}
+                    color={Colors[colorScheme ?? 'light'].text}
+                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                  />
+                )}
+              </Pressable>
+            </Link>
+          ),
+          */
+        }}
+      />
+      <Tabs.Screen
         name="two"
         options={{
           title: 'Settings',

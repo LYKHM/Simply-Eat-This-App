@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect,useCallback, useRef, use } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Animated, PanResponder, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import DonutChart from '@/components/DonutChart';
 import MealCard, { MealItem } from '@/components/MealCard';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -95,8 +96,9 @@ export default function HomeScreen() {
     const initializeMeals = async () => {
       const hasDailyMeals = await loadDailyMeals();
       if (!hasDailyMeals) {
-        // If no daily meals exist, create empty meal plan
-        createEmptyMealPlan();
+        // If no daily meals exist, don't create empty meal plan automatically
+        // Let user choose what to do with the buttons
+        console.log('No daily meals found for today - showing choice buttons');
       }
     };
     
@@ -128,6 +130,7 @@ export default function HomeScreen() {
   const [generatedMealPlan, setGeneratedMealPlan] = useState<MealPlan | null>(null);
   const [emptyMealPlan, setEmptyMealPlan] = useState<MealPlan | null>(null);
   const [mealPlanType, setMealPlanType] = useState<'generated' | 'empty' | null>(null);
+  console.log('mealPlanType', mealPlanType);
   const [time, setTime] = useState(20);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -368,7 +371,7 @@ export default function HomeScreen() {
     const initialCheckedMeals = emptyMealPlan.meals.map(() => [false, false]);
     setCheckedMeals(initialCheckedMeals);
 
-    // Save the empty meal plan to AsyncStorage
+    // Save the empty meal plan to AsyncStorage. BUT WHY?? Because they are the empty cards
     await saveDailyMeals(emptyMealPlan);
   };
 
@@ -405,10 +408,12 @@ export default function HomeScreen() {
     setEmptyMealPlan(updatedMealPlan);
 
     // Save to daily meals AsyncStorage
+    console.log('Saving updated meal plan with SavedRecipe to AsyncStorage');
     await saveDailyMeals(updatedMealPlan);
   };
 
   // Handle recipe selection from backend (scaled recipes from generate button)
+  // Why do I need this function again?
   const handleRecipeSelected = (groupIndex: number, mealIndex: number, recipe: any) => {
     if (!generatedMealPlan) return;
 
@@ -439,13 +444,67 @@ export default function HomeScreen() {
     updatedMealPlan.totalDailyFat = allMeals.reduce((sum, meal) => sum + meal.scaledFat, 0);
 
     setGeneratedMealPlan(updatedMealPlan);
+  };  //abs
+
+  // Update meal macros when a card refreshes its recipe
+  const handleMealRefreshed = async (groupIndex: number, mealIndex: number, updated: any) => {
+    try {
+      if (mealPlanType === 'generated' && generatedMealPlan) {
+        const updatedPlan: MealPlan = { ...generatedMealPlan } as MealPlan;
+        const group = updatedPlan.meals[groupIndex];
+        group.meals[mealIndex] = {
+          recipeId: Number(updated.recipeId ?? updated.id ?? group.meals[mealIndex].recipeId),
+          image: updated.image || '',
+          name: updated.name || updated.title || group.meals[mealIndex].name,
+          scaledCalories: Number(updated.scaledCalories ?? updated.calories ?? 0),
+          scaledProtein: Number(updated.scaledProtein ?? updated.protein ?? 0),
+          scaledCarbs: Number(updated.scaledCarbs ?? updated.carbs ?? 0),
+          scaledFat: Number(updated.scaledFat ?? updated.fat ?? 0),
+          servings: Number(updated.servings ?? group.meals[mealIndex].servings ?? 1),
+          diet: updated.diet || group.diet,
+        };
+        group.labelCalories = group.meals.reduce((sum, m) => sum + (m.scaledCalories || 0), 0);
+        const all = updatedPlan.meals.flatMap(g => g.meals);
+        updatedPlan.totalDailyCalories = all.reduce((s, m) => s + (m.scaledCalories || 0), 0);
+        updatedPlan.totalDailyProtein = all.reduce((s, m) => s + (m.scaledProtein || 0), 0);
+        updatedPlan.totalDailyCarbs = all.reduce((s, m) => s + (m.scaledCarbs || 0), 0);
+        updatedPlan.totalDailyFat = all.reduce((s, m) => s + (m.scaledFat || 0), 0);
+        setGeneratedMealPlan(updatedPlan);
+      } else if (isEmptyPlan && emptyMealPlan) {
+        const updatedPlan: MealPlan = { ...emptyMealPlan } as MealPlan;
+        const group = updatedPlan.meals[groupIndex];
+        group.meals[mealIndex] = {
+          recipeId: Number(updated.recipeId ?? updated.id ?? group.meals[mealIndex].recipeId),
+          image: updated.image || '',
+          name: updated.name || updated.title || group.meals[mealIndex].name,
+          scaledCalories: Number(updated.scaledCalories ?? updated.calories ?? 0),
+          scaledProtein: Number(updated.scaledProtein ?? updated.protein ?? 0),
+          scaledCarbs: Number(updated.scaledCarbs ?? updated.carbs ?? 0),
+          scaledFat: Number(updated.scaledFat ?? updated.fat ?? 0),
+          servings: Number(updated.servings ?? group.meals[mealIndex].servings ?? 1),
+          diet: updated.diet || group.diet,
+        };
+        group.labelCalories = group.meals.reduce((sum, m) => sum + (m.scaledCalories || 0), 0);
+        const all = updatedPlan.meals.flatMap(g => g.meals);
+        updatedPlan.totalDailyCalories = all.reduce((s, m) => s + (m.scaledCalories || 0), 0);
+        updatedPlan.totalDailyProtein = all.reduce((s, m) => s + (m.scaledProtein || 0), 0);
+        updatedPlan.totalDailyCarbs = all.reduce((s, m) => s + (m.scaledCarbs || 0), 0);
+        updatedPlan.totalDailyFat = all.reduce((s, m) => s + (m.scaledFat || 0), 0);
+        setEmptyMealPlan(updatedPlan);
+        await saveDailyMeals(updatedPlan);
+      }
+    } catch (e) {
+      console.error('Error applying refreshed meal to plan:', e);
+    }
   };
 
   // Save daily meals to AsyncStorage
   const saveDailyMeals = async (mealPlan: MealPlan) => {
-    try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    try {      
+      const today = new Date().toISOString().split('T')[0];
+      console.log('Save - Today string:', today);
       const dailyMealsKey = `dailyMeals_${today}`;
+      console.log('Saving to key:', dailyMealsKey);
       await AsyncStorage.setItem(dailyMealsKey, JSON.stringify(mealPlan));
       console.log('Daily meals saved for', today);
     } catch (error) {
@@ -457,9 +516,12 @@ export default function HomeScreen() {
   const loadDailyMeals = async () => {
   console.log("Loading daily meals from AsyncStorage");
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
+      console.log('Today string:', today);
       const dailyMealsKey = `dailyMeals_${today}`;
-      const savedMeals = await AsyncStorage.getItem(dailyMealsKey);
+      console.log('Looking for key:', dailyMealsKey);
+      const savedMeals = await AsyncStorage.getItem(dailyMealsKey); // returns a bunch of "" 
+      console.log('The asyncStorage for SavedMeals:', savedMeals);
       
       if (savedMeals) {
         const mealPlan = JSON.parse(savedMeals);
@@ -530,6 +592,34 @@ export default function HomeScreen() {
   };
 
  
+  // Helper function to check if AsyncStorage has real meals
+  const checkAsyncStorageForRealMeals = async (): Promise<boolean> => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const dailyMealsKey = `dailyMeals_${today}`;
+      const savedMeals = await AsyncStorage.getItem(dailyMealsKey);
+      
+      if (savedMeals) {
+        const mealPlan = JSON.parse(savedMeals);
+        const hasRealMeals = mealPlan.meals?.some((group: { meals: any[]; }) => 
+          group.meals?.some(meal => meal.recipeId !== 0 && meal.name !== "")
+        );
+        
+        if (hasRealMeals) {
+          setEmptyMealPlan(mealPlan);
+          setMealPlanType('empty');
+          console.log('Found real meals in AsyncStorage. Set it to empty');
+          return true;
+        }
+      }
+      console.log('No real meals in AsyncStorage');
+      return false;
+    } catch (error) {
+      console.error('Error checking AsyncStorage:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const loadDailyMealPlan = async () => {
       if (!user) return;
@@ -549,36 +639,20 @@ export default function HomeScreen() {
           
           // Check if this is an empty plan from backend (no meals)
           if (!theUsersDailyMealPlan.meals || theUsersDailyMealPlan.meals.length === 0) {
-            // No meals in database - check AsyncStorage for user's custom empty meal plan
-            console.log("No meals in database, checking AsyncStorage for empty meal plan");
-            const hasDailyMeals = await loadDailyMeals();
-            if (hasDailyMeals) {
-              // Found empty meal plan in AsyncStorage
-              setMealPlanType('empty');
-            }
-            // If no meals found anywhere, don't set any meal plan type
-            // User will see the buttons to choose
+            // No meals in database - check AsyncStorage for user's custom meal plan
+            console.log("No meals in database, checking AsyncStorage");
+            await checkAsyncStorageForRealMeals();
           } else {
             // Found meals in database - this is a generated meal plan
             console.log("✅ Generated meal plan loaded from database");
             setGeneratedMealPlan(theUsersDailyMealPlan);
             setMealPlanType('generated');
           }
-        } else {
-          console.error('Failed to load daily meal plan:', response.status);
-          // Check AsyncStorage as fallback
-          const hasDailyMeals = await loadDailyMeals();
-          if (hasDailyMeals) {
-            setMealPlanType('empty');
-          }
-        }
+        } 
       } catch (error) {
         console.error('Error loading daily meal plan:', error);
         // Check AsyncStorage as fallback
-        const hasDailyMeals = await loadDailyMeals();
-        if (hasDailyMeals) {
-          setMealPlanType('empty');
-        }
+        setMealPlanType(null);
       }
     };
   
@@ -619,6 +693,7 @@ export default function HomeScreen() {
   };
   
   // Initialize checkmark state when meal plan data changes
+  /*
   useEffect(() => {
     if (mealPlanData?.meals) {
       const initialCheckedMeals = mealPlanData.meals.map(group => 
@@ -627,7 +702,7 @@ export default function HomeScreen() {
       setCheckedMeals(initialCheckedMeals);
     }
   }, [mealPlanData]);
-
+   */
 
 
   // Checkmark toggle function
@@ -684,8 +759,6 @@ export default function HomeScreen() {
           });
         });
       }
-
-    
 
   
       // Save to daily_performance table
@@ -772,16 +845,7 @@ export default function HomeScreen() {
       setIsModalVisible(false);
     });
   };
-  
-  /*
-  const handleOption1 = () => {
-   // RevenueCatUI.presentPaywall()
-   // closeModal();
-    router.push('/modal');
-    console.log('Option 1 selected');
-  };
-  */
-
+/*
 const isSubscribed = async () => {
     const paywallResult = await RevenueCatUI.presentPaywallIfNeeded({requiredEntitlementIdentifier: 'pro'});
     console.log('paywallResult', paywallResult);
@@ -799,22 +863,20 @@ const isSubscribed = async () => {
            return false;
    }
  }
-
+  */
 const proAction = async () => {
+  router.push('/modal');
+
+  /*
     console.log('proAction');
     if (await isSubscribed()) {
     console.log('proAction: isSubscribed');
       router.push('/modal'); // What happense it its false? Will it return before it get it?
     }
+  */
   }
   
   
-  const handleOption2 = () => {
-    //closeModal();
-    // TODO: Add your second option functionality here
-    console.log('Option 2 selected');
-  };
-
   // Load today's checkmarks
   useEffect(() => {
     const loadCheckmarks = async () => {
@@ -850,6 +912,10 @@ const proAction = async () => {
     <View style={{ flex: 1 }}>
     
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
+        <LinearGradient
+          colors={['#ffffff', '#e3f2fd', '#fce4ec']}
+          style={{ flex: 1 }}
+        >
         <ScrollView contentContainerStyle={styles.container}>
 
         <View>
@@ -939,7 +1005,7 @@ const proAction = async () => {
         </View>
         {/*{(!mealPlanData || !mealPlanData.meals || mealPlanData.meals.length === 0) && ( */}
 
-        {!mealPlanType && (
+        {mealPlanType === null && (
           <>
             <Pressable style={styles.primaryBtn} onPress={GenerateDailyMealPlan}>
               <Text style={styles.primaryBtnText}>Generate Day</Text>
@@ -956,7 +1022,7 @@ const proAction = async () => {
           </>
         )}
 
-        {mealPlanData?.meals.map((group, i) => (
+        {mealPlanType !== null && mealPlanData?.meals.map((group, i) => (
           <View key={i} style={styles.planSection}>
             <Text style={styles.mealHeading}>
               {group.label}: {group.labelCalories.toFixed()} kcal
@@ -997,6 +1063,7 @@ const proAction = async () => {
                   clerk_id={user?.id || ''}
                   isChecked={checkedMeals[i]?.[j] || false}
                   onToggle={handleMealToggle}
+                  onRecipeRefreshed={handleMealRefreshed}
                 />
               );
             })}
@@ -1040,6 +1107,7 @@ const proAction = async () => {
                 </View>
                 <Text style={styles.optionTitle}>AI Camera</Text>
                 <Text style={styles.optionSubtitle}>Take a photo of your ingredients, and AI will suggest recipes.</Text>
+                <Text style={styles.optionSubtitle2}>Note: This feature is free for now. Try it before it becomes premium!</Text>
               </TouchableOpacity>
               {/*  
               <TouchableOpacity style={styles.modalOption} onPress={handleOption2}>
@@ -1054,6 +1122,7 @@ const proAction = async () => {
           </Animated.View>
         </Animated.View>
       )}
+        </LinearGradient>
       </SafeAreaView>
     </View>
   );
@@ -1271,7 +1340,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   optionSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  optionSubtitle2: {
+    fontSize: 12,
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 20,

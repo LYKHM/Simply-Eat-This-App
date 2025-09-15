@@ -54,6 +54,8 @@ function RootLayoutNav() {
               <Stack.Screen name="nutrition-targets" options={{ headerShown: false }} />
               <Stack.Screen name="weight-goal" options={{ headerShown: false }} />
               <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
+              <Stack.Screen name="citations" options={{ headerShown: false }} />
+              <Stack.Screen name="saved-recipes" options={{ headerShown: false }} />
             </Stack>
         </ThemeProvider>
       </ClerkLoaded>
@@ -91,7 +93,7 @@ export default function RootLayout() {
 
 
   // Configure RevenueCat
-
+/*
   useEffect(() => {
     if (Platform.OS === 'ios') {
       if(!process.env.EXPO_PUBLIC_RC_IOS) {
@@ -109,17 +111,12 @@ export default function RootLayout() {
       }
     }
 
+
    // test fetching product
 
  
-
-   
-
-
-   
-
   },[]);
-
+  */
 
   return <RootLayoutNav />;
 }

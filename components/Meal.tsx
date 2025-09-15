@@ -23,6 +23,17 @@ interface MealProps {
   clerk_id: string;
   isChecked: boolean;
   onToggle: (groupIndex: number, mealIndex: number, isChecked: boolean) => void;
+  onRecipeRefreshed?: (groupIndex: number, mealIndex: number, updated: {
+    recipeId: number;
+    image: string;
+    name: string;
+    scaledCalories: number;
+    scaledProtein: number;
+    scaledCarbs: number;
+    scaledFat: number;
+    servings: number;
+    diet?: string;
+  }) => void;
 }
 
 const Meal: React.FC<MealProps> = ({ 
@@ -42,7 +53,8 @@ const Meal: React.FC<MealProps> = ({
   time,
   clerk_id,
   isChecked,
-  onToggle
+  onToggle,
+  onRecipeRefreshed
 }) => {
   const [spinning, setSpinning] = useState(false);
   const [newRecipe, setNewRecipe] = useState(false);
@@ -107,6 +119,9 @@ const Meal: React.FC<MealProps> = ({
 
       await AsyncStorage.setItem("freshRecipe", JSON.stringify(replacement));
 
+      // Notify parent so totals update immediately
+      onRecipeRefreshed?.(groupIndex, mealIndex, replacement.replacement);
+
     } catch (error) {
       console.error('Error refreshing recipe:', error);
       Alert.alert('Error', 'Failed to refresh recipe');
@@ -131,7 +146,7 @@ const Meal: React.FC<MealProps> = ({
       }
     });
   }
-
+ 
   const handleCheckmarkToggle = () => {
     onToggle(groupIndex, mealIndex, !isChecked);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
@@ -160,9 +175,11 @@ const Meal: React.FC<MealProps> = ({
 
           {/* Food Image */}
           <View style={styles.imageContainer}>
-            <View style={[styles.foodImage, styles.placeholderImage]}>
-              <Ionicons name="restaurant" size={32} color="#9ca3af" />
-            </View>
+            <Image 
+                source={{ uri: newRecipe ? refreshedRecipe.image : foodImage }}
+                style={styles.foodImage}
+                resizeMode="cover"
+              />
           </View>
 
           {/* Meal Info */}
@@ -293,7 +310,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
     marginBottom: 8,
-    textDecorationLine: 'underline',
   },
   calories: {
     color: '#374151',

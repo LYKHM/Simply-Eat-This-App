@@ -251,6 +251,17 @@ export default function NutritionTargetsScreen() {
           <Text style={styles.subtitle}>
             Customize your daily calorie and macro targets. Adjust the percentages to match your dietary preferences.
           </Text>
+          
+          <TouchableOpacity 
+            style={styles.citationNotice}
+            onPress={() => router.push('/citations')}
+          >
+            <Ionicons name="library-outline" size={16} color="#6366f1" />
+            <Text style={styles.citationNoticeText}>
+              View scientific references for calculations
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#6366f1" />
+          </TouchableOpacity>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Daily Calories</Text>
@@ -545,5 +556,22 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  citationNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.2)',
+  },
+  citationNoticeText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#6366f1',
+    marginLeft: 8,
+    fontWeight: '500',
   },
 });

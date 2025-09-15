@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ interface SettingItemProps {
 }
 
 interface Recipe {
+  id?: number;
   name: string;
   instructions: string;
   ingredients_grams: Array<{ item: string; grams: number }>;
@@ -73,68 +74,29 @@ const SettingItem: React.FC<SettingItemProps> = ({
 
 export default function SettingsScreen() {
 
-
-useEffect(() => {
-  const loadSavedRecipes = async () => {
-    try {
-      const savedRecipesString = await AsyncStorage.getItem('savedRecipes');
-      const savedRecipes = savedRecipesString ? JSON.parse(savedRecipesString) : [];
-      
-      console.log('All saved recipes:', JSON.stringify(savedRecipes, null, 2));
-        
-    } catch (error) {
-      console.error('Error loading saved recipes:', error);
-    }
-  };
-
-  loadSavedRecipes();
-}, []);
-
-/*
-useEffect(() => {
-  const clearSavedRecipes = async () => {
-    try {
-      await AsyncStorage.removeItem('savedRecipes');
-      console.log('Saved recipes cleared successfully');
-    } catch (error) {
-      console.error('Error clearing saved recipes:', error);
-    }
-  };
-
-  clearSavedRecipes();
-}, []);
-*/
-
-/*
-useEffect(() => {
-  const getSpecificRecipe = async (recipeName: string) => {
-    try {
-      const savedRecipesString = await AsyncStorage.getItem('savedRecipes');
-      const savedRecipes = savedRecipesString ? JSON.parse(savedRecipesString) : [];
-      
-      const recipe = savedRecipes.find((r: Recipe) => r.name === recipeName);
-      if (recipe) {
-        console.log('Found recipe:', JSON.stringify(recipe, null, 2));
-        // Use recipe here
-      } else {
-        console.log('Recipe not found');
-      }
-      
-    } catch (error) {
-      console.error('Error finding recipe:', error);
-    }
-  };
-
-  getSpecificRecipe('Oat and Carrot Porridge');
-}, []);
-*/
-
-
-
   const [remindersEnabled, setRemindersEnabled] = React.useState(true);
   const router = useRouter();
   const { signOut } = useClerk();
 
+/*
+  useEffect(() => {
+    const loadSavedRecipes = async () => {
+      try {
+        const savedRecipesString = await AsyncStorage.getItem('savedRecipes');
+        const savedRecipes = savedRecipesString ? JSON.parse(savedRecipesString) : [];
+        
+        console.log('All saved recipes:', JSON.stringify(savedRecipes, null, 2));
+          
+      } catch (error) {
+        console.error('Error loading saved recipes:', error);
+      }
+    };
+  
+    loadSavedRecipes();
+  }, []);
+  */
+
+  
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -173,7 +135,7 @@ useEffect(() => {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
     <LinearGradient
-      colors={['#ffffff', '#fef7ff', '#f0f9ff']}
+      colors={['#ffffff', '#e3f2fd', '#fce4ec']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -182,6 +144,18 @@ useEffect(() => {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Settings</Text>
           <Text style={styles.headerSubtitle}>Customize your Simply Eat This experience</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Saved Recipes</Text>
+          <View style={styles.sectionContent}>
+            <SettingItem
+              icon="bookmark-outline"
+              title="Saved Recipes"
+              subtitle="View, inspect, and manage your saved recipes"
+              onPress={() => router.push('/saved-recipes' as any)}
+            />
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -280,12 +254,17 @@ useEffect(() => {
         */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Legal</Text>
+          <Text style={styles.sectionTitle}>Legal & Citations</Text>
           <View style={styles.sectionContent}>
             <SettingItem
               icon="document-text-outline"
               title="Terms & Policies"
               onPress={() => handleSettingPress('Terms of Service')}
+            />
+            <SettingItem
+              icon="library-outline"
+              title="Citations"
+              onPress={() => router.push('/citations')}
             />
           </View>
         </View>
@@ -415,5 +394,74 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     color: '#9ca3af',
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  recipeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(229, 231, 235, 0.5)',
+  },
+  recipeInfo: {
+    flex: 1,
+  },
+  recipeName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  recipeDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 8,
+  },
+  recipeDetail: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  recipeMacros: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  macroText: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  deleteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
   },
 });

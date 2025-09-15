@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 import {
   View,
@@ -11,7 +12,8 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 
 
@@ -62,6 +64,7 @@ const RecipePage = () => {
   const [showScaled, setShowScaled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchedRecipeData, setFetchedRecipeData] = useState<RecipeData | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   
 
@@ -86,6 +89,7 @@ const RecipePage = () => {
         });
         const data = await response.json();
         setFetchedRecipeData(data);
+        
       } catch (error) {
         console.error('Error fetching recipe:', error);
       } finally {
@@ -95,6 +99,61 @@ const RecipePage = () => {
 
     fetchRecipeData();
   }, [id]);
+
+ 
+
+  const handleSaveRecipe = async () => {
+    if (!fetchedRecipeData) return;
+
+    try {
+      // Get existing saved recipes
+      const savedRecipesString = await AsyncStorage.getItem('savedRecipes');
+      const savedRecipes = savedRecipesString ? JSON.parse(savedRecipesString) : [];
+
+      const recipeToSave = {
+        name: fetchedRecipeData.original.name,
+        instructions: fetchedRecipeData.original.instructions,
+        ingredients_grams: fetchedRecipeData.original.ingredients.map(ing => ({
+          item: ing.name,
+          grams: ing.quantity
+        })),
+        calories: fetchedRecipeData.original.calories,
+        protein_g: fetchedRecipeData.original.protein,
+        carbs_g: fetchedRecipeData.original.carbs,
+        fat_g: fetchedRecipeData.original.fat,
+        health_rating: fetchedRecipeData.original.Health_Score,
+        time_minutes: fetchedRecipeData.original.prep_time + fetchedRecipeData.original.cook_time,
+        allergy_warning: fetchedRecipeData.original.allergies || 'no allergies found',
+        cost: fetchedRecipeData.original.cost || 0,
+        isMostPopular: false,
+        id: Date.now() + Math.random() // Generate unique ID
+      };
+
+      // Check if recipe already exists (by name)
+      const existingIndex = savedRecipes.findIndex((recipe: any) => recipe.name === recipeToSave.name);
+      
+      if (existingIndex >= 0) {
+        // Update existing recipe
+        savedRecipes[existingIndex] = recipeToSave;
+        Alert.alert('Success', 'Recipe updated in your saved recipes!');
+      } else {
+        // Add new recipe
+        savedRecipes.push(recipeToSave);
+        Alert.alert('Success', 'Recipe saved to your collection!');
+      }
+
+      // Save back to AsyncStorage
+      await AsyncStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
+      setIsSaved(true);
+      
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+      Alert.alert('Error', 'Failed to save recipe');
+    }
+  };
 
   if (loading) {
     return (
@@ -129,6 +188,17 @@ const RecipePage = () => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>{fetchedRecipeData.original.name}</Text>
+          <TouchableOpacity 
+            style={styles.saveButton} 
+            onPress={handleSaveRecipe}
+            disabled={isSaved}
+          >
+            <Ionicons 
+              name={isSaved ? "bookmark" : "bookmark-outline"} 
+              size={24} 
+              color={isSaved ? "#10b981" : "#6b7280"} 
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Image and Nutrition Chart */}
@@ -284,14 +354,24 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 24,
+    paddingHorizontal: 4,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#111827',
     textAlign: 'center',
+    flex: 1,
+  },
+  saveButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginLeft: 16,
   },
   imageNutritionContainer: {
     marginBottom: 24,

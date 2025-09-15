@@ -406,6 +406,19 @@ const Onboarding = () => {
             • Target: {userData.targetWeight}kg in {calculateTimeToGoal()} weeks
           </Text>
         </View>
+        
+        <View style={styles.citationNotice}>
+          <Text style={styles.citationNoticeText}>
+            📚 All calculations based on peer-reviewed scientific research
+          </Text>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.citationLink}
+          onPress={() => router.push('/citations')}
+        >
+          <Text style={styles.citationLinkText}>View sources and calculation methods</Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -770,6 +783,35 @@ const styles = StyleSheet.create({
   },
   nextButtonTextDisabled: {
     color: 'rgba(255, 255, 255, 0.5)',
+  },
+  citationNotice: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  citationNoticeText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '500',
+  },
+  citationLink: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+    backgroundColor: 'rgba(99, 102, 241, 0.08)'
+  },
+  citationLinkText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#4f46e5',
+    fontWeight: '600'
   },
 });
 

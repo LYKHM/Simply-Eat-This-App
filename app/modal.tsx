@@ -1,14 +1,22 @@
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useState, useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, StatusBar } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, StatusBar, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Rect, Defs, Mask } from "react-native-svg";
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const [selectedCategory, setSelectedCategory] = useState<'beverage' | 'meal' | 'snack' | 'dessert'>('meal');
+
+  const { width, height } = Dimensions.get('window');
+  const rectWidth = width * 0.85;
+  const rectHeight = height * 0.55;
+  const rectX = (width - rectWidth) / 2;
+  const rectY = (height - rectHeight) / 2 - 50;
 
 
   const takePhoto = async () => {
@@ -38,8 +46,6 @@ export default function App() {
     }
   };
 
-
-
   if (!permission) {
     return <View />;
   }
@@ -67,49 +73,123 @@ export default function App() {
     );
   }
 
-
-  
-
   const handleClose = () => {
     router.back();
   };
 
   return (
-    
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" />
       
       {/* Camera View */}
-      <CameraView style={styles.camera} facing={facing}  ref={cameraRef} />
+      <CameraView style={styles.camera} facing={facing} ref={cameraRef} />
       
+      {/* SVG Overlay with rounded rectangle cutout */}
+      <Svg 
+        height="100%" 
+        width="100%" 
+        style={StyleSheet.absoluteFillObject}
+      >
+        <Defs>
+          <Mask id="mask">
+            {/* White background = visible */}
+            <Rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {/* Black rectangle = hidden (creates the hole) */}
+            <Rect 
+              x={rectX} 
+              y={rectY} 
+              width={rectWidth} 
+              height={rectHeight} 
+              fill="black" 
+              rx="20" 
+              ry="20" 
+            />
+          </Mask>
+        </Defs>
+        {/* Dark overlay with mask applied */}
+        <Rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="rgba(0, 0, 0, 0.2)"
+          mask="url(#mask)"
+        />
+      </Svg>
+
       {/* Top Controls */}
       <View style={styles.topControls}>
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
           <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
-        
-        
       </View>
-      
-      {/* Camera Frame Overlay */}
-      <View style={styles.cameraFrame}>
-        <View style={styles.cornerTopLeft} />
-        <View style={styles.cornerTopRight} />
-        <View style={styles.cornerBottomLeft} />
-        <View style={styles.cornerBottomRight} />
-      </View>
-      
-      {/* Bottom Controls */}
-      <View style={styles.bottomControls}>
+
+      {/* Bottom Matte Black/Gray Area with Photo Button */}
+      <View style={styles.bottomArea}>
+        {/* Food Category Icons */}
+        <View style={styles.categoryContainer}>
+
+        {/*  
+          <TouchableOpacity 
+            style={styles.categoryButton} 
+            onPress={() => setSelectedCategory('beverage')}
+          >
+            <Ionicons 
+              name="wine" 
+              size={24} 
+              color={selectedCategory === 'beverage' ? '#FFD700' : '#fff'} 
+            />
+            <Text style={styles.categoryText}>Beverage</Text>
+          </TouchableOpacity>
+          */}
+          
+          <TouchableOpacity 
+            style={styles.categoryButton} 
+            onPress={() => setSelectedCategory('meal')}
+          >
+            <Ionicons 
+              name="restaurant" 
+              size={24} 
+              color={selectedCategory === 'meal' ? '#FFD700' : '#fff'} 
+            />
+            <Text style={styles.categoryText}>Meal</Text>
+          </TouchableOpacity>
+          
+          {/*  
+          <TouchableOpacity 
+            style={styles.categoryButton} 
+            onPress={() => setSelectedCategory('snack')}
+          >
+            <Ionicons 
+              name="nutrition" 
+              size={24} 
+              color={selectedCategory === 'snack' ? '#FFD700' : '#fff'} 
+            />
+            <Text style={styles.categoryText}>Snack</Text>
+          </TouchableOpacity>
+          
+
+          <TouchableOpacity 
+            style={styles.categoryButton} 
+            onPress={() => setSelectedCategory('dessert')}
+          >
+            <Ionicons 
+              name="ice-cream" 
+              size={24} 
+              color={selectedCategory === 'dessert' ? '#FFD700' : '#fff'} 
+            />
+            <Text style={styles.categoryText}>Dessert</Text>
+          </TouchableOpacity>
+          */}
+        </View>
         
         <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
           <View style={styles.captureButtonInner} />
         </TouchableOpacity>
-        
       </View>
-    </View>
-    
+    </SafeAreaView>
   );
+  
 }
 
 const styles = StyleSheet.create({
@@ -117,18 +197,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  message: {
-    textAlign: 'center',
-    paddingBottom: 20,
-    color: '#fff',
-    fontSize: 16,
-  }, 
   camera: {
     flex: 1,
+    borderRadius: 20,
   },
   topControls: {
     position: 'absolute',
-    top: 60,
+    top: 20,
     left: 20,
     right: 20,
     flexDirection: 'row',
@@ -143,121 +218,61 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backdropFilter: 'blur(10px)',
+    zIndex: 1,
   },
-  flashButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  captureButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
-    backdropFilter: 'blur(10px)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
-  cameraFrame: {
+  captureButtonInner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#000',
+  },
+  bottomArea: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cornerTopLeft: {
-    position: 'absolute',
-    top: '25%',
-    left: '15%',
-    width: 30,
-    height: 30,
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-    borderColor: '#fff',
-  },
-  cornerTopRight: {
-    position: 'absolute',
-    top: '25%',
-    right: '15%',
-    width: 30,
-    height: 30,
-    borderTopWidth: 3,
-    borderRightWidth: 3,
-    borderColor: '#fff',
-  },
-  cornerBottomLeft: {
-    position: 'absolute',
-    bottom: '25%',
-    left: '15%',
-    width: 30,
-    height: 30,
-    borderBottomWidth: 3,
-    borderLeftWidth: 3,
-    borderColor: '#fff',
-  },
-  cornerBottomRight: {
-    position: 'absolute',
-    bottom: '25%',
-    right: '15%',
-    width: 30,
-    height: 30,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
-    borderColor: '#fff',
-  },
-  bottomControls: {
-    position: 'absolute',
-    bottom: 50,
     left: 0,
     right: 0,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
+  categoryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    width: '100%',
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
-  galleryButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
+  categoryButton: {
     alignItems: 'center',
-    backdropFilter: 'blur(10px)',
-  },
-  galleryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     justifyContent: 'center',
-    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  captureButtonInner: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#fff',
-  },
-  flipButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backdropFilter: 'blur(10px)',
+  categoryText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 4,
+    textAlign: 'center',
   },
   permissionContainer: {
     flex: 1,
@@ -282,7 +297,6 @@ const styles = StyleSheet.create({
     elevation: 10,
     backdropFilter: 'blur(20px)',
   },
-  
   permissionTitle: {
     fontSize: 24,
     fontWeight: '700',
@@ -329,5 +343,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
- 
 });
