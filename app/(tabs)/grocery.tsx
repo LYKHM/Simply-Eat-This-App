@@ -282,7 +282,7 @@ export default function GroceryScreen() {
 
         {/* Recipe Selection Screen */}
         {showRecipeSelection && (
-          <View>
+          <View style={{ backgroundColor: 'transparent' }}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Select Recipes to Add to Grocery List
             </Text>
@@ -431,6 +431,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingVertical: 20,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 28,
@@ -538,14 +539,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    //shadowColor: '#000',
+    //shadowOffset: {
+    //  width: 0,
+    //  height: 1,
+    //},
+    //shadowOpacity: 0.1,
+    //shadowRadius: 2,
+    //elevation: 2,
+    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
   },
   itemLeft: {
     flex: 1,
@@ -584,6 +586,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 12,
   },
   emptyStateText: {
     fontSize: 20,

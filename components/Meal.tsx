@@ -254,14 +254,15 @@ const styles = StyleSheet.create({
     minWidth: 300,
     borderRadius: 12,
     backgroundColor: '#f5f5f5',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    //shadowColor: '#000',
+    //shadowOffset: {
+    //  width: 0,
+    //  height: 2,
+    //},
+    //shadowOpacity: 0.2,
+    //shadowRadius: 4,
+    //elevation: 4,
+    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
     marginHorizontal: 8,
   },
   contentRow: {

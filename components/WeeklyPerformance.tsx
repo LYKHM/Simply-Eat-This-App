@@ -50,20 +50,7 @@ export default function WeeklyPerformance({
   const totalCurrentWeek = currentWeekCalories.reduce((sum, cal) => sum + cal, 0);
   const totalPreviousWeek = previousWeekCalories.reduce((sum, cal) => sum + cal, 0);
 
-  /* Temporary remove this until I get the mysql database working.
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Weekly Performance</Text>
-        </View>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading performance data...</Text>
-        </View>
-      </View>
-    );
-  }
-  */
+
 
   return (
     <View style={styles.container}>
@@ -167,12 +154,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 6,
-    backdropFilter: 'blur(10px)',
+    //shadowColor: '#000',
+    //shadowOpacity: 0.1,
+    //shadowRadius: 8,
+    //shadowOffset: { width: 0, height: 2 },
+    //elevation: 1,
+    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
+    //backdropFilter: 'blur(10px)',
   },
   header: {
     flexDirection: 'row',

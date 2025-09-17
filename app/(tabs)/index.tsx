@@ -130,7 +130,7 @@ export default function HomeScreen() {
   const [generatedMealPlan, setGeneratedMealPlan] = useState<MealPlan | null>(null);
   const [emptyMealPlan, setEmptyMealPlan] = useState<MealPlan | null>(null);
   const [mealPlanType, setMealPlanType] = useState<'generated' | 'empty' | null>(null);
-  console.log('mealPlanType', mealPlanType);
+  //console.log('mealPlanType', mealPlanType);
   const [time, setTime] = useState(20);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -1145,15 +1145,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 8,
-    backdropFilter: 'blur(10px)',
+    //shadowColor: '#000',
+    //shadowOpacity: 0.1,
+    //shadowRadius: 10,
+    //shadowOffset: {
+    //  width: 0,
+    //  height: 4,
+    //},
+    //elevation: 8,
+    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
+    //backdropFilter: 'blur(10px)',
   },
   heroValue: { fontSize: 25, fontWeight: '800', marginTop: 4 },
   heroSubtitle: { fontSize: 12, color: '#666' },
@@ -1169,15 +1170,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 8,
-    backdropFilter: 'blur(10px)',
+    //shadowColor: '#000',
+    //shadowOpacity: 0.1,
+    //shadowRadius: 10,
+    //shadowOffset: {
+    //  width: 0,
+    //  height: 4,
+    //},
+    //elevation: 8,
+    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
+    //backdropFilter: 'blur(10px)',
   },
   metricValue: { fontSize: 16, fontWeight: '800', marginTop: 2 },
   metricLabel: { fontSize: 9, color: '#666' },
@@ -1249,11 +1251,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+   // shadowColor: '#000',
+   // shadowOpacity: 0.2,
+   // shadowRadius: 8,
+   // shadowOffset: { width: 0, height: 3 },
+   // elevation: 4,
+   boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
   },
   swipeBehind: {
     position: 'absolute',
@@ -1272,10 +1275,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    //shadowColor: '#000',
+    //shadowOpacity: 0.12,
+    //shadowRadius: 8,
+    //shadowOffset: { width: 0, height: 2 },
+    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
   },
   
   // Modal styles
@@ -1297,11 +1301,12 @@ const styles = StyleSheet.create({
     margin: 20,
     width: '90%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    //shadowColor: '#000',
+    //shadowOffset: { width: 0, height: 10 },
+    //shadowOpacity: 0.25,
+    //shadowRadius: 20,
+    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
+    //elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',

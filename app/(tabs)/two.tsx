@@ -309,6 +309,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     paddingHorizontal: 20,
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   headerTitle: {
     fontSize: 32,
@@ -324,6 +325,7 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
     paddingHorizontal: 20,
+    backgroundColor: 'transparent',
   },
   sectionTitle: {
     fontSize: 18,
@@ -336,14 +338,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    //shadowColor: '#000',
+    //shadowOffset: {
+    //  width: 0,
+    //  height: 2,
+    //},
+    //shadowOpacity: 0.1,
+    //shadowRadius: 8,
+    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
+    //elevation: 3,
   },
   settingItem: {
     borderBottomWidth: 1,
