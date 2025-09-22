@@ -11,7 +11,7 @@ import Meal from '@/components/Meal';
 import EmptyMeal from '@/components/EmptyMeal';
 import WeeklyPerformance from '@/components/WeeklyPerformance';
 import { router } from 'expo-router';
-import RevenueCatUI, {PAYWALL_RESULT} from 'react-native-purchases-ui'
+import { useSubscription } from '@/lib/subscriptionService';
 
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
@@ -81,6 +81,9 @@ type MealPlan = {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = Dimensions.get('window');
+  
+  // Subscription state
+  const { isSubscribed, loading: subscriptionLoading, refreshStatus } = useSubscription();
 
   useEffect(() => {
     (async () => {
@@ -845,36 +848,16 @@ export default function HomeScreen() {
       setIsModalVisible(false);
     });
   };
-/*
-const isSubscribed = async () => {
-    const paywallResult = await RevenueCatUI.presentPaywallIfNeeded({requiredEntitlementIdentifier: 'pro'});
-    console.log('paywallResult', paywallResult);
-   
-    switch (paywallResult) {
-       case PAYWALL_RESULT.NOT_PRESENTED:
-           return true;
-       case PAYWALL_RESULT.ERROR:
-       case PAYWALL_RESULT.CANCELLED:
-           return false;
-       case PAYWALL_RESULT.PURCHASED:
-       case PAYWALL_RESULT.RESTORED:
-           return true;
-       default:
-           return false;
-   }
- }
-  */
+  
 const proAction = async () => {
-  router.push('/modal');
-
-  /*
-    console.log('proAction');
-    if (await isSubscribed()) {
-    console.log('proAction: isSubscribed');
-      router.push('/modal'); // What happense it its false? Will it return before it get it?
-    }
-  */
+  if (isSubscribed) {
+    // User has premium access, proceed to the feature
+    router.push('../FilterPage');
+  } else {
+    // Navigate to paywall screen
+    router.push('../paywall');
   }
+};
   
   
   // Load today's checkmarks
@@ -920,7 +903,7 @@ const proAction = async () => {
 
         <View>
             <Image 
-              source={require('@/assets/images/new-splash-icon.png')} 
+              source={require('@/assets/images/home_screen_logo.png')} 
               style={styles.logo}
               resizeMode="contain"
             />

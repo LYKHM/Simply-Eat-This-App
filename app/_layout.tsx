@@ -56,6 +56,8 @@ function RootLayoutNav() {
               <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
               <Stack.Screen name="citations" options={{ headerShown: false }} />
               <Stack.Screen name="saved-recipes" options={{ headerShown: false }} />
+              <Stack.Screen name="FilterPage" options={{ headerShown: false }} />
+              <Stack.Screen name="paywall" options={{ headerShown: false }} />
             </Stack>
         </ThemeProvider>
       </ClerkLoaded>
@@ -66,6 +68,8 @@ function RootLayoutNav() {
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    BricolageGrotesque: require('../assets/fonts/BricolageGrotesque_Condensed-Regular.ttf'), 
+    BricolageGrotesqueBold: require('../assets/fonts/BricolageGrotesque_SemiCondensed-Bold.ttf'), 
     ...FontAwesome.font,
   });
   const [splashHold, setSplashHold] = useState(true);
@@ -93,58 +97,35 @@ export default function RootLayout() {
 
 
   // Configure RevenueCat
-/*
   useEffect(() => {
     if (Platform.OS === 'ios') {
       if(!process.env.EXPO_PUBLIC_RC_IOS) {
         Alert.alert("Error configure RC", "RevenueCat API key for ios not provided")
       }else{
-        
         Purchases.configure({apiKey: process.env.EXPO_PUBLIC_RC_IOS});
       }
       
     } else if (Platform.OS === 'android') {
       if(!process.env.EXPO_PUBLIC_RC_ANDROID) {
-        Alert.alert("Error configure RC", "RevenueCat API key for ios not provided")
+        Alert.alert("Error configure RC", "RevenueCat API key for android not provided")
       }else{
         Purchases.configure({apiKey: process.env.EXPO_PUBLIC_RC_ANDROID});
       }
     }
 
+  
+  },[]);
 
-   // test fetching product
+  useEffect(() => {
+    async function fetchProducts() {
+      const offerings = await Purchases.getOfferings();
+      console.log('offerings', offerings);
+      const customerInfo = await Purchases.getCustomerInfo();
+      console.log('customerInfo', customerInfo);
+    }
+    fetchProducts();
+  },[]);
 
  
-  },[]);
-  */
-
   return <RootLayoutNav />;
 }
-
-
-
-
-
-  /*
-  useEffect(() => {
-    if (!loaded) return;
-    const t = setTimeout(() => setSplashHold(false), 3000);
-    console.log("main _layout: remove the splashscreen after 3s")
-    return () => clearTimeout(t);
-  }, [loaded]);
-
-  
-
-  useEffect(() => {
-    console.log("main _layout: splashHold", splashHold);
-    if (loaded && !splashHold) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded, splashHold]);
-
-  if (!loaded || splashHold) {
-    return null;
-  }
-
-}
-*/

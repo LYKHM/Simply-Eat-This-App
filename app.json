@@ -4,12 +4,12 @@
     "slug": "SimplyEatThis",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/new-app-logo.png",
+    "icon": "./assets/images/SET_icon.png",
     "scheme": "simplyeatthis",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/NewSplashIconFoxy.png",
+      "image": "./assets/images/new_foxy_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,8 +18,8 @@
       "bundleIdentifier": "com.northstarapps.simplyeatthis",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSUserTrackingUsageDescription": "We use your data to personalize your experience and improve our services.",
-        "NSCameraUsageDescription": "This app needs access to your camera so it can scan food items with AI."
+        "NSUserTrackingUsageDescription": "Simply Eat This uses tracking to show you personalized meal suggestions and nutrition offers tailored to your goals.",
+        "NSCameraUsageDescription": "Simply Eat This uses the camera to scan food items and suggest meals with calorie and nutrition details."
       }
     },
     "android": {
@@ -46,7 +46,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Simply Eat This to access your camera"
+          "cameraPermission": "Simply Eat This uses the camera to scan food items and suggest meals with calorie and nutrition details."
         }
       ],
       "expo-tracking-transparency"

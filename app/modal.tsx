@@ -2,15 +2,17 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useState, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, StatusBar, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Rect, Defs, Mask } from "react-native-svg";
 
 export default function App() {
+  const params = useLocalSearchParams();
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
-  const [selectedCategory, setSelectedCategory] = useState<'beverage' | 'meal' | 'snack' | 'dessert'>('meal');
+  const [selectedCategory, setSelectedCategory] = useState<'beverages' | 'meals' | 'snacks' | 'desserts'>('meals');
+  console.log('Selected category:', selectedCategory);
 
   const { width, height } = Dimensions.get('window');
   const rectWidth = width * 0.85;
@@ -30,13 +32,22 @@ export default function App() {
         //const base64Image = photo.base64;
         console.log('Photo captured!');
         
-      // Navigate immediately to RecipeResults with the photo data
-      console.log('Navigating to RecipeResults with photo data');
+      // Navigate immediately to RecipeResults with the photo data and filter params
+      console.log('Navigating to RecipeResults with photo data and filters');
       router.replace({
         pathname: '/RecipeResults',
         params: { 
           photo: photo.uri,
-          timestamp: Date.now().toString() // Add timestamp to ensure fresh navigation
+          timestamp: Date.now().toString(), // Add timestamp to ensure fresh navigation
+          category: selectedCategory,
+          // Pass along all filter parameters
+          diet: params.diet,
+          familyMembers: params.familyMembers,
+          calorieRange: params.calorieRange,
+          timeRange: params.timeRange,
+          slowCooker: params.slowCooker,
+          excludedFoods: params.excludedFoods,
+
         }
       });
    
@@ -61,11 +72,11 @@ export default function App() {
           
           <Text style={styles.permissionTitle}>Camera Access Required</Text>
           <Text style={styles.permissionMessage}>
-            We need your permission to show the camera.
+            Simply Eat This uses the camera to scan food items and suggest meals with calorie and nutrition details.
           </Text>
-          
+          r
           <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Grant Camera Permission</Text>
+            <Text style={styles.permissionButtonText}>Continue</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -129,41 +140,42 @@ export default function App() {
         {/* Food Category Icons */}
         <View style={styles.categoryContainer}>
 
-        {/*  
+        {/*
           <TouchableOpacity 
             style={styles.categoryButton} 
-            onPress={() => setSelectedCategory('beverage')}
+            onPress={() => setSelectedCategory('beverages')}
           >
             <Ionicons 
               name="wine" 
               size={24} 
-              color={selectedCategory === 'beverage' ? '#FFD700' : '#fff'} 
+              color={selectedCategory === 'beverages' ? '#FFD700' : '#fff'} 
             />
             <Text style={styles.categoryText}>Beverage</Text>
           </TouchableOpacity>
           */}
           
+          
           <TouchableOpacity 
             style={styles.categoryButton} 
-            onPress={() => setSelectedCategory('meal')}
+            onPress={() => setSelectedCategory('meals')}
           >
             <Ionicons 
               name="restaurant" 
               size={24} 
-              color={selectedCategory === 'meal' ? '#FFD700' : '#fff'} 
+              color={selectedCategory === 'meals' ? '#FFD700' : '#fff'} 
             />
             <Text style={styles.categoryText}>Meal</Text>
           </TouchableOpacity>
           
-          {/*  
+            
           <TouchableOpacity 
             style={styles.categoryButton} 
-            onPress={() => setSelectedCategory('snack')}
+            onPress={() => setSelectedCategory('snacks')}
           >
             <Ionicons 
               name="nutrition" 
               size={24} 
-              color={selectedCategory === 'snack' ? '#FFD700' : '#fff'} 
+              color={selectedCategory === 'snacks' ? '#FFD700' : '#fff'} 
             />
             <Text style={styles.categoryText}>Snack</Text>
           </TouchableOpacity>
@@ -171,16 +183,16 @@ export default function App() {
 
           <TouchableOpacity 
             style={styles.categoryButton} 
-            onPress={() => setSelectedCategory('dessert')}
+            onPress={() => setSelectedCategory('desserts')}
           >
             <Ionicons 
               name="ice-cream" 
               size={24} 
-              color={selectedCategory === 'dessert' ? '#FFD700' : '#fff'} 
+              color={selectedCategory === 'desserts' ? '#FFD700' : '#fff'} 
             />
             <Text style={styles.categoryText}>Dessert</Text>
           </TouchableOpacity>
-          */}
+          
         </View>
         
         <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>

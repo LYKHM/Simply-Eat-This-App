@@ -107,12 +107,9 @@ const AuthScreen = () => {
         keyboardShouldPersistTaps="handled" 
         >
 
-          <View style={styles.logoContainer}>
-            <Image source={require("../../assets/images/SplashIcon.png")} resizeMode="contain" style={styles.logo} />
-          </View>
-
+          
           <View style={styles.headingContainer}>
-            <Text style={styles.label}>Sign In to Lyft One AI</Text>
+            <Text style={styles.label}>Sign In to Simply Eat This</Text>
             <Text style={styles.description}>
               You must create an account to access the app
             </Text>

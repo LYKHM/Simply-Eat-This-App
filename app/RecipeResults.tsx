@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as StoreReview from 'expo-store-review';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +27,7 @@ interface Recipe {
   instructions: string;
   ingredients_grams: Array<{ item: string; grams: number }>;
   calories: number;
+  servings: number;
   protein_g: number;
   carbs_g: number;
   fat_g: number;
@@ -48,6 +50,7 @@ export default function RecipeResults() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+    console.log('Selected recipe:', selectedRecipe);
     const [base64Image, setBase64Image] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(0));
@@ -81,7 +84,7 @@ export default function RecipeResults() {
         convertToBase64();
       }, [params.photo]);
 
-// Take the base64 image and send it to the backend and set the data to recipes state
+// Take the base64 image and send it to the backend with all filter parameters
     useEffect(() => {
         if (!base64Image) return;
 
@@ -94,7 +97,7 @@ export default function RecipeResults() {
               setError('No photo data received');
               setLoading(false);
               return;
-            }
+            } 
 
             const userDataString = await AsyncStorage.getItem("userData");
             const userData = JSON.parse(userDataString || '{}');
@@ -104,10 +107,19 @@ export default function RecipeResults() {
             const nutritionData = JSON.parse(nutritionDataString || '{}');
             setCalories(nutritionData.calories || 2000);
 
+            // Get filter parameters from URL params (passed from FilterPage -> modal -> RecipeResults)
+            const filterParams = {
+              diet: params.diet || 'anything',
+              familyMembers: parseInt(params.familyMembers as string) || 1,
+              calorieRange: params.calorieRange || '400-600',
+              timeRange: params.timeRange || '15-20',
+              slowCooker: params.slowCooker === 'true',
+              excludedFoods: params.excludedFoods ? JSON.parse(params.excludedFoods as string) : [],
+              category: params.category || 'meals'
+            };
 
+            console.log('Filter params being sent to backend:', filterParams);
 
-
-    
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/api/openai-photo`, {
               method: 'POST',
               headers: {
@@ -115,8 +127,14 @@ export default function RecipeResults() {
               },
               body: JSON.stringify({
                 photo: base64Image,
-                diet: diet,
-                calories: calories,
+                diet: filterParams.diet,
+                calories: calories, 
+                category: filterParams.category,
+                familyMembers: filterParams.familyMembers,
+                calorieRange: filterParams.calorieRange,
+                timeRange: filterParams.timeRange,
+                slowCooker: filterParams.slowCooker,
+                excludedFoods: filterParams.excludedFoods,
               }),
             });
     
@@ -125,11 +143,36 @@ export default function RecipeResults() {
             }
     
             const data: RecipeResponse = await response.json();
-            
+
          
             setRecipes(data.meals);
             setIngredientsInPhoto(data.ingredientsInPhoto);
             setLoading(false);
+
+
+            //Put this request inside the onboarding later.
+            //Problem: It keeps loading each time I open this screen.
+            //Ask for a review after they get results
+            //Step 1: Check if the platform supports reviews
+            /*
+            const isAvailable = await StoreReview.isAvailableAsync();
+            if(!isAvailable){
+              console.log("Store review not available on this platform")
+              return;
+            }
+
+            // Steo 2: Check if we can actually show a review prompt
+            const hasAction = await StoreReview.hasAction();
+              if(!hasAction){
+                console.log("Store review prompt not available")
+                return;
+              }
+            
+
+            // Step 3: Show the review prompt
+            await StoreReview.requestReview();
+            console.log("Review prompt shown successfully");
+            */
             
           } catch (error) {
             console.error('Error fetching recipes:', error);
@@ -399,6 +442,10 @@ export default function RecipeResults() {
                 <Text style={styles.modalMetaText}>{selectedRecipe.time_minutes} minutes</Text>
               </View>
               <View style={styles.modalMetaItem}>
+                <Ionicons name="restaurant-outline" size={20} color="#6c757d" />
+                <Text style={styles.modalMetaText}>{selectedRecipe.servings} servings</Text>
+              </View>
+              <View style={styles.modalMetaItem}>
                 <Ionicons name="cash-outline" size={20} color="#6c757d" />
                 <Text style={styles.modalMetaText}>${selectedRecipe.cost.toFixed(2)}</Text>
               </View>
@@ -524,6 +571,10 @@ export default function RecipeResults() {
                           <Text style={styles.metaText}>{recipe.time_minutes}m</Text>
                         </View>
                         <View style={styles.metaItem}>
+                          <Ionicons name="restaurant-outline" size={16} color="#6c757d" />
+                          <Text style={styles.metaText}>{recipe.servings} servings</Text>
+                        </View>
+                        <View style={styles.metaItem}>
                           <Ionicons name="cash-outline" size={16} color="#6c757d" />
                           <Text style={styles.metaText}>${recipe.cost.toFixed(2)}</Text>
                         </View>
@@ -591,7 +642,7 @@ const styles = StyleSheet.create({
     //shadowOpacity: 0.05,
     //shadowRadius: 8,
     //elevation: 3,
-    boxShadow: '7px 7px 10px 2px rgba(0, 0, 0, 0.1)',
+   
     marginBottom: 10,
   },
   backButton: {
