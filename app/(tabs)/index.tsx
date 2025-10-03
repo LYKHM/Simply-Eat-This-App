@@ -11,7 +11,7 @@ import Meal from '@/components/Meal';
 import EmptyMeal from '@/components/EmptyMeal';
 import WeeklyPerformance from '@/components/WeeklyPerformance';
 import { router } from 'expo-router';
-import { useSubscription } from '@/lib/subscriptionService';
+//import { useSubscription } from '@/lib/subscriptionService';
 
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
@@ -83,7 +83,7 @@ export default function HomeScreen() {
   const { width: screenWidth } = Dimensions.get('window');
   
   // Subscription state
-  const { isSubscribed, loading: subscriptionLoading, refreshStatus } = useSubscription();
+  //const { isSubscribed, loading: subscriptionLoading, refreshStatus } = useSubscription();
 
   useEffect(() => {
     (async () => {
@@ -850,6 +850,8 @@ export default function HomeScreen() {
   };
   
 const proAction = async () => {
+  router.push('../FilterPage');
+  /*
   if (isSubscribed) {
     // User has premium access, proceed to the feature
     router.push('../FilterPage');
@@ -857,6 +859,7 @@ const proAction = async () => {
     // Navigate to paywall screen
     router.push('../paywall');
   }
+    */
 };
   
   

@@ -1,3 +1,4 @@
+/*
 import Purchases, { CustomerInfo, PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 
 export interface SubscriptionService {
@@ -87,7 +88,7 @@ export function useSubscription() {
   useEffect(() => {
     checkStatus();
   }, []);
-  */  
+    
   const refreshStatus = () => {
     checkStatus();
   };
@@ -98,3 +99,4 @@ export function useSubscription() {
     refreshStatus,
   };
 }
+*/

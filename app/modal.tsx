@@ -1,15 +1,14 @@
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, CameraType } from 'expo-camera';
 import { useState, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, StatusBar, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Rect, Defs, Mask } from "react-native-svg";
-
+ 
 export default function App() {
   const params = useLocalSearchParams();
   const [facing, setFacing] = useState<CameraType>('back');
-  const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [selectedCategory, setSelectedCategory] = useState<'beverages' | 'meals' | 'snacks' | 'desserts'>('meals');
   console.log('Selected category:', selectedCategory);
@@ -22,18 +21,18 @@ export default function App() {
 
 
   const takePhoto = async () => {
-    console.log('Taking photo...');
+   
     if (cameraRef.current) {
       try {
         const photo = await cameraRef.current.takePictureAsync({
           quality: 0.6, // The image is too large, so reduce the quality
         });
-        console.log('Done with takePictureAsync');
+        
         //const base64Image = photo.base64;
-        console.log('Photo captured!');
+        
         
       // Navigate immediately to RecipeResults with the photo data and filter params
-      console.log('Navigating to RecipeResults with photo data and filters');
+      
       router.replace({
         pathname: '/RecipeResults',
         params: { 
@@ -56,33 +55,7 @@ export default function App() {
       }
     }
   };
-
-  if (!permission) {
-    return <View />;
-  }
-
-  if (!permission.granted) {
-    return (
-      <SafeAreaView style={{flex: 1}} edges={['top', 'left', 'right']}>
-      <View style={styles.permissionContainer}>
-        <View style={styles.permissionCard}>
-          <View style={styles.permissionIcon}>
-            <Ionicons name="camera" size={48} color="#fff" />
-          </View>
-          
-          <Text style={styles.permissionTitle}>Camera Access Required</Text>
-          <Text style={styles.permissionMessage}>
-            Simply Eat This uses the camera to scan food items and suggest meals with calorie and nutrition details.
-          </Text>
-          r
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Continue</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      </SafeAreaView>
-    );
-  }
+  
 
   const handleClose = () => {
     router.back();

@@ -133,7 +133,7 @@ export default function RecipeResults() {
                 familyMembers: filterParams.familyMembers,
                 calorieRange: filterParams.calorieRange,
                 timeRange: filterParams.timeRange,
-                slowCooker: filterParams.slowCooker,
+                slowCooker: filterParams.slowCooker || false,
                 excludedFoods: filterParams.excludedFoods,
               }),
             });
@@ -183,7 +183,7 @@ export default function RecipeResults() {
     
         fetchRecipes();
       }, [base64Image]);
-
+ 
 
       const handleBack = () => {
         router.back();

@@ -97,6 +97,7 @@ export default function RootLayout() {
 
 
   // Configure RevenueCat
+  /*
   useEffect(() => {
     if (Platform.OS === 'ios') {
       if(!process.env.EXPO_PUBLIC_RC_IOS) {
@@ -112,10 +113,10 @@ export default function RootLayout() {
         Purchases.configure({apiKey: process.env.EXPO_PUBLIC_RC_ANDROID});
       }
     }
-
-  
+    
   },[]);
-
+  */
+ /*
   useEffect(() => {
     async function fetchProducts() {
       const offerings = await Purchases.getOfferings();
@@ -124,7 +125,9 @@ export default function RootLayout() {
       console.log('customerInfo', customerInfo);
     }
     fetchProducts();
+    
   },[]);
+  */
 
  
   return <RootLayoutNav />;

@@ -1,4 +1,5 @@
 
+/*
 import { StyleSheet, Text, View, Image, TextInput, Button, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React from "react";
@@ -188,7 +189,7 @@ export default function SignUpScreen ()  {
         <View style={styles.logoContainer}> 
           <Image source={require("../../assets/images/SplashIcon.png")} resizeMode="contain" style={styles.logo} />
         </View>
-        */}
+        
 
         <View style={styles.headingContainer}>
           <Text style={styles.label}>Sign Up to Simply Eat This</Text>
@@ -356,3 +357,4 @@ const styles = StyleSheet.create({
     paddingBottom: 10
   }
 });
+*/

@@ -57,10 +57,10 @@ const SocialLoginButton = ({
     } else if (strategy === "google") {
       return <Ionicons name="logo-google" size={24} color="#DB4437" />;
     } else if (strategy === "apple") {
-      return <Ionicons name="logo-apple" size={24} color="black" />;
+      return <Ionicons name="logo-apple" size={24} color="white" />;
     }
   };
-  
+   
      //Oh I only run the use Effect when its ready. But how do I prevent it from running twice?
    useEffect(() => {
      console.log("useEffect running");
@@ -141,18 +141,36 @@ const SocialLoginButton = ({
 
 
 
+  const getButtonStyle = () => {
+    if (strategy === "google") {
+      return styles.googleButton;
+    } else if (strategy === "apple") {
+      return styles.appleButton;
+    }
+    return styles.defaultButton;
+  };
+
+  const getTextStyle = () => {
+    if (strategy === "apple") {
+      return styles.appleButtonText;
+    }
+    return styles.defaultButtonText;
+  };
+
   return (
     <TouchableOpacity
-      style={[styles.container]}
+      style={[styles.container, getButtonStyle()]}
       onPress={onSocialLoginPress}
       disabled={isLoading}
     >
       {isLoading ? (
-        <ActivityIndicator size="small" color="black" />
+        <ActivityIndicator size="small" color={strategy === "apple" ? "#fff" : "#000"} />
       ) : (
         buttonIcon()
       )}
-      <Text style={styles.buttonText}>{buttonText()}</Text>
+      <Text style={[styles.buttonText, getTextStyle()]}>
+        {buttonText()}
+      </Text>
       <View />
     </TouchableOpacity>
   );
@@ -163,17 +181,34 @@ export default SocialLoginButton;
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    borderColor: "gray",
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 10,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
     flexDirection: "row",
-    gap: 10,
-    justifyContent: "space-between",
+    gap: 12,
+    justifyContent: "center",
     alignItems: "center",
   },
+  googleButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  appleButton: {
+    backgroundColor: "#000",
+  },
+  defaultButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
   buttonText: {
-    fontSize: 15,
-    fontWeight: "medium",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  defaultButtonText: {
+    color: "#000",
+  },
+  appleButtonText: {
+    color: "#fff",
   },
 });

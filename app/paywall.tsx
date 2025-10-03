@@ -1,3 +1,4 @@
+/*
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -5,8 +6,13 @@ import { router } from "expo-router";
 import { PurchasesPackage } from 'react-native-purchases';
 import { subscriptionService } from '../lib/subscriptionService';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import SparkleContainer from '../components/SparkleContainer';
 import TestimonialCard from '../components/TestimonialCard';
+import { Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
 
 
 export default function Paywall() {
@@ -21,7 +27,7 @@ export default function Paywall() {
   useEffect(() => {
     loadOfferings();
   }, []);
-  */
+  
 
   const loadOfferings = async () => {
    // setLoading(true);
@@ -75,6 +81,36 @@ export default function Paywall() {
       Alert.alert('Restore Failed', 'Failed to restore purchases. Please try again.');
     }
     setRestoring(false);
+  };
+
+  const handleOpenTerms = async () => {
+    try {
+      await WebBrowser.openBrowserAsync('https://www.simplyeatthis.app/terms', {
+        showTitle: true,
+      });
+    } catch (error) {
+      console.error('Error opening Terms of Service:', error);
+      Alert.alert(
+        'Error',
+        'Unable to open Terms of Service. Please try again later.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleOpenPrivacy = async () => {
+    try {
+      await WebBrowser.openBrowserAsync('https://www.simplyeatthis.app/privacy', {
+        showTitle: true,
+      });
+    } catch (error) {
+      console.error('Error opening Privacy Policy:', error);
+      Alert.alert(
+        'Error',
+        'Unable to open Privacy Policy. Please try again later.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const formatPrice = (pkg: PurchasesPackage) => {
@@ -167,7 +203,7 @@ export default function Paywall() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
+        {/* Header }
         <View style={styles.header}>
           <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
             <Text style={styles.closeText}>✕</Text>
@@ -189,7 +225,7 @@ export default function Paywall() {
           Achieve your goals <Text style={styles.highlight}>4.2x</Text> faster
         </Text>
 
-        {/* Dynamic Pricing Card */}
+        {/* Dynamic Pricing Card 
           <View style={styles.pricingCard}>
             <Text style={styles.badge}>Most popular</Text>
             <View style={styles.pricingRow}>
@@ -201,7 +237,7 @@ export default function Paywall() {
              </Text>
           </View>
     
-        {/* Features */}
+        {/* Features *
         <View style={styles.featuresHeader}>
           <Text style={styles.headerTitle}>What you get</Text>
           <Text style={styles.headerFree}>Free</Text>
@@ -241,7 +277,7 @@ export default function Paywall() {
           ))}
         </View>
 
-        {/* Testimonials */}
+        {/* Testimonials 
         <Text style={styles.testimonialsTitle}>Success stories from our clients</Text>
         <FlatList
           data={testimonials}
@@ -272,19 +308,34 @@ export default function Paywall() {
           style={{ height: 200 }} 
         />
         
-        {/* Trust Indicators */}
+        {/* Trust Indicators 
         <View style={styles.trustRow}>
           <View style={styles.trustItem}>
-            <Text style={styles.trustBig}>4.7</Text>
-            <Text style={styles.trustSmall}>average rating</Text>
+            <Image source={require('../assets/images/average_rating.png')} style={styles.trustImage}/>
           </View>
           <View style={styles.trustItem}>
-            <Text style={styles.trustBig}>1M</Text>
-            <Text style={styles.trustSmall}>users worldwide</Text>
+           <Image source={require('../assets/images/users_worldwide.png')} style={styles.trustImage}/>
           </View>
         </View>
 
-        {/* CTA */}
+        <Text style={styles.disclaimer}>
+        Your monthly subscription automatically renews for the same term unless cancelled at least 24 hours prior to the end of the current term. Cancel any time in the App Store at no additional cost; your subscription will then cease at the end of the current term.
+        </Text>
+
+        <View style={styles.threeButtons}>
+
+          <TouchableOpacity onPress={handleOpenTerms}>
+            <Text style={styles.TermsOfUse}>Terms of Use</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleOpenPrivacy}>
+            <Text style={styles.PrivacyPolicy}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Text style={styles.RestorePurchases}>Restore purchases</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* CTA 
         <TouchableOpacity 
           style={[styles.ctaButton, (purchasing || loading) && styles.disabledButton]} 
           onPress={handlePurchase}
@@ -297,13 +348,7 @@ export default function Paywall() {
           )}
         </TouchableOpacity>
 
-        {/* Footer */}
-        <TouchableOpacity onPress={handleRestore} disabled={restoring}>
-          <Text style={styles.footer}>
-            Terms of Use · Privacy Policy · Restore purchases
-          </Text>
-        </TouchableOpacity>
-        <Text style={styles.disclaimer}>No payment now. Easy to cancel.</Text>
+        <Text style={styles.noPayment}>No payment now. Easy to cancel.</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -515,7 +560,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   testimonialsTitle: {
-    fontSize: 20,
+    fontSize: 40,
     fontWeight: "700",
     marginBottom: 12,
     textAlign: "center",
@@ -597,5 +642,39 @@ const styles = StyleSheet.create({
     width: 300,  // Card width
     marginRight: 20,  // Space between cards
   },
+  trustImage: {
+    width: width * 0.3,
+    height: 140,
+    resizeMode: 'contain',
+    marginBottom: -16,
+  },
+  disclaimerText: {
+    fontSize: 13,
+    color: "#777",
+    textAlign: "center",
+  },
+  threeButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 16,
+  },
+  TermsOfUse: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  PrivacyPolicy: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  RestorePurchases: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  noPayment: {
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
+  },
 });
 
+*/
