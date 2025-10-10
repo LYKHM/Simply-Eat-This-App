@@ -10,8 +10,14 @@ export default function App() {
   const params = useLocalSearchParams();
   const [facing, setFacing] = useState<CameraType>('back');
   const cameraRef = useRef<CameraView>(null);
-  const [selectedCategory, setSelectedCategory] = useState<'beverages' | 'meals' | 'snacks' | 'desserts'>('meals');
+  const [selectedCategory, setSelectedCategory] = useState<'beverages' | 'meals' | 'snacks' | 'desserts'>(
+    (params.category as 'beverages' | 'meals' | 'snacks' | 'desserts') || 'meals'
+  );
+  const [photoType, setPhotoType] = useState<'fridge' | 'pantry'>('fridge');
+  const [fridgePhoto, setFridgePhoto] = useState<string | null>(null);
+  const [pantryPhoto, setPantryPhoto] = useState<string | null>(null);
   console.log('Selected category:', selectedCategory);
+  console.log('Photo type:', photoType);
 
   const { width, height } = Dimensions.get('window');
   const rectWidth = width * 0.85;
@@ -21,44 +27,87 @@ export default function App() {
 
 
   const takePhoto = async () => {
-   
     if (cameraRef.current) {
       try {
         const photo = await cameraRef.current.takePictureAsync({
           quality: 0.6, // The image is too large, so reduce the quality
         });
         
-        //const base64Image = photo.base64;
-        
-        
-      // Navigate immediately to RecipeResults with the photo data and filter params
-      
-      router.replace({
-        pathname: '/RecipeResults',
-        params: { 
-          photo: photo.uri,
-          timestamp: Date.now().toString(), // Add timestamp to ensure fresh navigation
-          category: selectedCategory,
-          // Pass along all filter parameters
-          diet: params.diet,
-          familyMembers: params.familyMembers,
-          calorieRange: params.calorieRange,
-          timeRange: params.timeRange,
-          slowCooker: params.slowCooker,
-          excludedFoods: params.excludedFoods,
-
+        switch (photoType) {
+          case 'fridge':
+            setFridgePhoto(photo.uri);
+            // If pantry photo already exists, navigate immediately
+            if (pantryPhoto) {
+              router.replace({
+                pathname: '/RecipeResults',
+                params: { 
+                  fridgePhoto: photo.uri,
+                  pantryPhoto: pantryPhoto,
+                  timestamp: Date.now().toString(),
+                  category: selectedCategory,
+                  diet: params.diet,
+                  familyMembers: params.familyMembers,
+                  calorieRange: params.calorieRange,
+                  timeRange: params.timeRange,
+                  slowCooker: params.slowCooker,
+                  excludedFoods: params.excludedFoods,
+                }
+              });
+            } else {
+              // Switch to pantry mode to take pantry photo
+              setPhotoType('pantry');
+            }
+            break;
+            
+          case 'pantry':
+            setPantryPhoto(photo.uri);
+            // If fridge photo already exists, navigate immediately
+            if (fridgePhoto) {
+              router.replace({
+                pathname: '/RecipeResults',
+                params: { 
+                  fridgePhoto: fridgePhoto,
+                  pantryPhoto: photo.uri,
+                  timestamp: Date.now().toString(),
+                  category: selectedCategory,
+                  diet: params.diet,
+                  familyMembers: params.familyMembers,
+                  calorieRange: params.calorieRange,
+                  timeRange: params.timeRange,
+                  slowCooker: params.slowCooker,
+                  excludedFoods: params.excludedFoods,
+                }
+              });
+            } else {
+              // Switch to fridge mode to take fridge photo
+              setPhotoType('fridge');
+            }
+            break;
         }
-      });
-   
       } catch (error) {
         console.error('Error taking photo:', error);
       }
+    }
+  };
+
+  const handlePhotoTypeSwitch = (type: 'fridge' | 'pantry') => {
+    // Only allow switching if the required photo hasn't been taken yet
+    if (type === 'fridge' && !fridgePhoto) {
+      setPhotoType('fridge');
+    } else if (type === 'pantry' && !pantryPhoto) {
+      setPhotoType('pantry');
     }
   };
   
 
   const handleClose = () => {
     router.back();
+  };
+
+  const handleReset = () => {
+    setPhotoType('fridge');
+    setFridgePhoto(null);
+    setPantryPhoto(null);
   };
 
   return (
@@ -106,67 +155,83 @@ export default function App() {
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
           <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
+        {(fridgePhoto || pantryPhoto) && (
+          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+            <Ionicons name="refresh" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Bottom Matte Black/Gray Area with Photo Button */}
       <View style={styles.bottomArea}>
-        {/* Food Category Icons */}
-        <View style={styles.categoryContainer}>
-
-        {/*
-          <TouchableOpacity 
-            style={styles.categoryButton} 
-            onPress={() => setSelectedCategory('beverages')}
-          >
-            <Ionicons 
-              name="wine" 
-              size={24} 
-              color={selectedCategory === 'beverages' ? '#FFD700' : '#fff'} 
-            />
-            <Text style={styles.categoryText}>Beverage</Text>
-          </TouchableOpacity>
-          */}
-          
-          
-          <TouchableOpacity 
-            style={styles.categoryButton} 
-            onPress={() => setSelectedCategory('meals')}
-          >
-            <Ionicons 
-              name="restaurant" 
-              size={24} 
-              color={selectedCategory === 'meals' ? '#FFD700' : '#fff'} 
-            />
-            <Text style={styles.categoryText}>Meal</Text>
-          </TouchableOpacity>
-          
-            
-          <TouchableOpacity 
-            style={styles.categoryButton} 
-            onPress={() => setSelectedCategory('snacks')}
-          >
-            <Ionicons 
-              name="nutrition" 
-              size={24} 
-              color={selectedCategory === 'snacks' ? '#FFD700' : '#fff'} 
-            />
-            <Text style={styles.categoryText}>Snack</Text>
-          </TouchableOpacity>
-          
-
-          <TouchableOpacity 
-            style={styles.categoryButton} 
-            onPress={() => setSelectedCategory('desserts')}
-          >
-            <Ionicons 
-              name="ice-cream" 
-              size={24} 
-              color={selectedCategory === 'desserts' ? '#FFD700' : '#fff'} 
-            />
-            <Text style={styles.categoryText}>Dessert</Text>
-          </TouchableOpacity>
-          
+        {/* Photo Type Toggle */}
+        <View style={styles.photoTypeContainer}>
+          <Text style={styles.photoTypeLabel}>
+            {!fridgePhoto && !pantryPhoto && 'Take a photo of your fridge first'}
+            {fridgePhoto && !pantryPhoto && photoType === 'pantry' && 'Now take a photo of your pantry'}
+            {fridgePhoto && !pantryPhoto && photoType === 'fridge' && 'Retake fridge photo or switch to pantry'}
+          </Text>
+          <View style={styles.photoTypeToggle}>
+            <TouchableOpacity 
+              style={[
+                styles.photoTypeButton,
+                photoType === 'fridge' && styles.photoTypeButtonActive,
+                fridgePhoto && photoType !== 'fridge' && styles.photoTypeButtonDisabled
+              ]}
+              onPress={() => handlePhotoTypeSwitch('fridge')}
+              disabled={!!(fridgePhoto && photoType !== 'fridge')}
+            >
+              <Ionicons 
+                name="snow" 
+                size={20} 
+                color={photoType === 'fridge' ? '#000' : '#fff'} 
+              />
+              <Text style={[
+                styles.photoTypeButtonText,
+                photoType === 'fridge' && styles.photoTypeButtonTextActive
+              ]}>
+                Fridge
+              </Text>
+              {fridgePhoto && (
+                <Ionicons 
+                  name="checkmark-circle" 
+                  size={16} 
+                  color={photoType === 'fridge' ? '#000' : '#4CAF50'} 
+                />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.photoTypeButton,
+                photoType === 'pantry' && styles.photoTypeButtonActive,
+                pantryPhoto && photoType !== 'pantry' && styles.photoTypeButtonDisabled
+              ]}
+              onPress={() => handlePhotoTypeSwitch('pantry')}
+              disabled={!!(pantryPhoto && photoType !== 'pantry')}
+            >
+              <Ionicons 
+                name="archive" 
+                size={20} 
+                color={photoType === 'pantry' ? '#000' : '#fff'} 
+              />
+              <Text style={[
+                styles.photoTypeButtonText,
+                photoType === 'pantry' && styles.photoTypeButtonTextActive
+              ]}>
+                Pantry
+              </Text>
+              {pantryPhoto && (
+                <Ionicons 
+                  name="checkmark-circle" 
+                  size={16} 
+                  color={photoType === 'pantry' ? '#000' : '#4CAF50'} 
+                />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
+
+       
         
         <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
           <View style={styles.captureButtonInner} />
@@ -205,6 +270,16 @@ const styles = StyleSheet.create({
     backdropFilter: 'blur(10px)',
     zIndex: 1,
   },
+  resetButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backdropFilter: 'blur(10px)',
+    zIndex: 1,
+  },
   captureButton: {
     width: 70,
     height: 70,
@@ -234,7 +309,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 200,
+    height: 280,
     justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: 20,
@@ -330,5 +405,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  photoTypeContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  photoTypeLabel: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  photoTypeToggle: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 25,
+    padding: 4,
+  },
+  photoTypeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 8,
+  },
+  photoTypeButtonActive: {
+    backgroundColor: '#fff',
+  },
+  photoTypeButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  photoTypeButtonTextActive: {
+    color: '#000',
+  },
+  photoTypeButtonDisabled: {
+    opacity: 0.5,
   },
 });

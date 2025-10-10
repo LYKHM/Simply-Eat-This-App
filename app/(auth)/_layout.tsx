@@ -16,7 +16,7 @@ export default function AuthRoutesLayout() {
  // If I remove this useEffect I can't log in. I am just stuck in the sign up page with a error  "code": "session_exists"
  // ,
  /*
- useEffect(() => {
+ useEffect(() => { 
   if (isSignedIn) {
     // Signed in → go into the protected tab navigator
     router.replace('/(tabs)');

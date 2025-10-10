@@ -8,7 +8,7 @@ interface SparkleContainerProps {
   starCount?: number;
   radius?: number;
 }
-
+ 
 const SparkleContainer: React.FC<SparkleContainerProps> = ({
   size = 8,
   color = '#6cc24a',

@@ -16,6 +16,7 @@ import { Alert, Platform } from 'react-native';
 
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { SubscriptionProvider } from '@/lib/SubscriptionContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -41,25 +42,27 @@ function RootLayoutNav() {
   
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey || ''}>
        <ClerkLoaded>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false  }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false, gestureEnabled: false }} />
-              <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
-              <Stack.Screen name="RecipePage" options={{ headerShown: false }} />
-              <Stack.Screen name="RecipeResults" options={{ headerShown: false }} />
-              <Stack.Screen name="profile-information" options={{ headerShown: false }} />
-              <Stack.Screen name="account-information" options={{ headerShown: false }} />
-              <Stack.Screen name="diet-type" options={{ headerShown: false }} />
-              <Stack.Screen name="nutrition-targets" options={{ headerShown: false }} />
-              <Stack.Screen name="weight-goal" options={{ headerShown: false }} />
-              <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
-              <Stack.Screen name="citations" options={{ headerShown: false }} />
-              <Stack.Screen name="saved-recipes" options={{ headerShown: false }} />
-              <Stack.Screen name="FilterPage" options={{ headerShown: false }} />
-              <Stack.Screen name="paywall" options={{ headerShown: false }} />
-            </Stack>
-        </ThemeProvider>
+        <SubscriptionProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false  }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false, gestureEnabled: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="RecipePage" options={{ headerShown: false }} />
+                <Stack.Screen name="RecipeResults" options={{ headerShown: false }} />
+                <Stack.Screen name="profile-information" options={{ headerShown: false }} />
+                <Stack.Screen name="account-information" options={{ headerShown: false }} />
+                <Stack.Screen name="diet-type" options={{ headerShown: false }} />
+                <Stack.Screen name="nutrition-targets" options={{ headerShown: false }} />
+                <Stack.Screen name="weight-goal" options={{ headerShown: false }} />
+                <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
+                <Stack.Screen name="citations" options={{ headerShown: false }} />
+                <Stack.Screen name="saved-recipes" options={{ headerShown: false }} />
+                <Stack.Screen name="paywall" options={{ headerShown: false }} />
+                <Stack.Screen name="FilterPage" options={{ headerShown: false }} />
+              </Stack>
+          </ThemeProvider>
+        </SubscriptionProvider>
       </ClerkLoaded>
     </ClerkProvider>
   );
@@ -97,7 +100,7 @@ export default function RootLayout() {
 
 
   // Configure RevenueCat
-  /*
+  
   useEffect(() => {
     if (Platform.OS === 'ios') {
       if(!process.env.EXPO_PUBLIC_RC_IOS) {
@@ -115,19 +118,19 @@ export default function RootLayout() {
     }
     
   },[]);
-  */
+  
  /*
   useEffect(() => {
     async function fetchProducts() {
       const offerings = await Purchases.getOfferings();
-      console.log('offerings', offerings);
+      console.log('offerings', offerings.current);
       const customerInfo = await Purchases.getCustomerInfo();
       console.log('customerInfo', customerInfo);
     }
     fetchProducts();
     
   },[]);
-  */
+  */  
 
  
   return <RootLayoutNav />;

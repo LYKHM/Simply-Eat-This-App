@@ -11,7 +11,7 @@ import Meal from '@/components/Meal';
 import EmptyMeal from '@/components/EmptyMeal';
 import WeeklyPerformance from '@/components/WeeklyPerformance';
 import { router } from 'expo-router';
-//import { useSubscription } from '@/lib/subscriptionService';
+import { useSubscriptionContext } from '@/lib/SubscriptionContext';
 
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
@@ -83,7 +83,7 @@ export default function HomeScreen() {
   const { width: screenWidth } = Dimensions.get('window');
   
   // Subscription state
-  //const { isSubscribed, loading: subscriptionLoading, refreshStatus } = useSubscription();
+  const { isSubscribed, loading: subscriptionLoading, refreshStatus } = useSubscriptionContext();
 
   useEffect(() => {
     (async () => {
@@ -735,6 +735,7 @@ export default function HomeScreen() {
       
       if (newCount % 10 === 0) {
         cleanupOldCheckmarks();
+        cleanupOldDailyMeals();
       }
     } catch (error) {
       console.error('Error saving checkmarks:', error);
@@ -812,6 +813,31 @@ export default function HomeScreen() {
     }
   };
 
+  const cleanupOldDailyMeals = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const dailyMealsKeys = keys.filter(key => key.startsWith('dailyMeals_'));
+      
+      // Keep only last 7 days (or adjust as needed)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      for (const key of dailyMealsKeys) {
+        const dateStr = key.replace('dailyMeals_', '');
+        const keyDate = new Date(dateStr);
+        
+        if (keyDate < sevenDaysAgo) {
+          await AsyncStorage.removeItem(key);
+          console.log(`Cleaned up old daily meals: ${key}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up daily meals:', error);
+    }
+  };
+
+
+
   // Modal functions for the + button
   const openModal = () => {
     setIsModalVisible(true);
@@ -850,16 +876,16 @@ export default function HomeScreen() {
   };
   
 const proAction = async () => {
-  router.push('../FilterPage');
-  /*
+  //router.push('../FilterPage');
+  
   if (isSubscribed) {
     // User has premium access, proceed to the feature
     router.push('../FilterPage');
   } else {
     // Navigate to paywall screen
     router.push('../paywall');
-  }
-    */
+  } 
+    
 };
   
   

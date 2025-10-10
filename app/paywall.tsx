@@ -1,10 +1,11 @@
-/*
+
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { PurchasesPackage } from 'react-native-purchases';
 import { subscriptionService } from '../lib/subscriptionService';
+import { useSubscriptionContext } from '../lib/SubscriptionContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -16,14 +17,16 @@ const { width } = Dimensions.get('window');
 
 
 export default function Paywall() {
+  const { refreshStatus } = useSubscriptionContext();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
+  console.log('selectedPackage state from paywall.tsx', selectedPackage);
   const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
  
-/*
+
   useEffect(() => {
     loadOfferings();
   }, []);
@@ -33,10 +36,10 @@ export default function Paywall() {
    // setLoading(true);
     try {
       const offering = await subscriptionService.getOfferings();
-      if (offering?.availablePackages) {
+      if (offering?.availablePackages) { // Is this correct? Does offering have availablePackages https://revenuecat.github.io/react-native-purchases-docs/8.4.0/interfaces/PurchasesOffering.html
         setPackages(offering.availablePackages);
         // Auto-select the first package (typically annual)
-        setSelectedPackage(offering.availablePackages[0]);
+        setSelectedPackage(offering.availablePackages[0]); // Is this the right package?
       }
     } catch (error) {
       console.error('Error loading offerings:', error);
@@ -52,6 +55,9 @@ export default function Paywall() {
     try {
       const success = await subscriptionService.purchasePackage(selectedPackage);
       if (success) {
+        // Refresh subscription status immediately
+        await refreshStatus();
+        
         Alert.alert('Success!', 'Welcome to Simply Eat This Premium! 🎉', [
           { text: 'Continue', onPress: () => router.back() }
         ]);
@@ -70,6 +76,9 @@ export default function Paywall() {
     try {
       const success = await subscriptionService.restorePurchases();
       if (success) {
+        // Refresh subscription status immediately
+        await refreshStatus();
+        
         Alert.alert('Restored!', 'Your purchases have been restored! 🎉', [
           { text: 'Continue', onPress: () => router.back() }
         ]);
@@ -112,7 +121,7 @@ export default function Paywall() {
       );
     }
   };
-
+  // Do I need this?
   const formatPrice = (pkg: PurchasesPackage) => {
     const price = pkg.product.priceString;
     const period = pkg.packageType === 'MONTHLY' ? '/month' : 
@@ -120,6 +129,7 @@ export default function Paywall() {
     return `${price}${period}`;
   };
 
+  // Do I need this?
   const getTrialText = (pkg: PurchasesPackage) => {
     if (pkg.packageType === 'ANNUAL') return '3-day free trial';
     return 'Start now';
@@ -129,36 +139,29 @@ export default function Paywall() {
   const features = [
     {
       id: 1,
-      title: 'AI calorie counter',
-      description: 'Scan any food and get instant calorie & nutrition info',
+      title: 'Basic Meal Generator',
+      description: 'Generate meals based on your preferences',
       free: true,
       plus: true,
     },
     {
       id: 2,
-      title: 'Intermittent fasting',
-      description: 'Track fasting windows and optimize your eating schedule',
+      title: 'AI Scanner',
+      description: 'Scan your fridge and pantry and get instant meals suggestions',
       free: false,
       plus: true,
     },
     {
       id: 3,
-      title: 'Macro balance tracker',
-      description: 'Monitor carbs, protein, and fats for optimal nutrition',
+      title: 'A Super Filter',
+      description: 'Get access to a super filter for the AI scanner',
       free: false,
       plus: true,
     },
     {
       id: 4,
-      title: 'Statistics with insights',
-      description: 'Get personalized recommendations based on your progress',
-      free: false,
-      plus: true,
-    },
-    {
-      id: 5,
-      title: 'Awards & Highlights',
-      description: 'Celebrate milestones and stay motivated on your journey',
+      title: 'Grocery List',
+      description: 'Make it super easy to get the groceries you need',
       free: false,
       plus: true,
     },
@@ -203,7 +206,7 @@ export default function Paywall() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header }
+        
         <View style={styles.header}>
           <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
             <Text style={styles.closeText}>✕</Text>
@@ -213,35 +216,44 @@ export default function Paywall() {
         <View style={styles.logoContainer}>
           <Text style={styles.logo}>Simply Eat This</Text>
           <LinearGradient
-            colors={['#8dd65c', '#6cc24a']}
+            colors={['#0d6efd', '#0db9fd']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.plusContainer}
           >
-            <Text style={styles.plus}>Plus</Text>
+            <Text style={styles.plus}>Premium</Text>
           </LinearGradient>
         </View>
         <Text style={styles.headline}>
           Achieve your goals <Text style={styles.highlight}>4.2x</Text> faster
         </Text>
 
-        {/* Dynamic Pricing Card 
+        {selectedPackage && (
           <View style={styles.pricingCard}>
-            <Text style={styles.badge}>Most popular</Text>
+            <LinearGradient
+              colors={['#0d6efd', '#0db9fd']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.badge}
+            >
+              <Text style={styles.badgeText}>Most popular</Text>
+            </LinearGradient>
             <View style={styles.pricingRow}>
-              <Text style={styles.trial}>3 day free trial</Text>
-              <Text style={styles.price}>$140.99/month</Text>
+              <Text style={styles.trial}>
+                {selectedPackage.product.introPrice?.periodNumberOfUnits} day free trial
+              </Text>
+              <Text style={styles.price}>{selectedPackage.product.priceString}/month</Text>
             </View>
              <Text style={styles.priceNote}>
-               then <Text style={styles.oldPrice}>$67.99/year</Text> <Text style={styles.arrow}>→</Text> <Text style={styles.newPrice}>$50/year</Text>
+              <Text style={styles.arrow}>→</Text> <Text style={styles.newPrice}>{selectedPackage.product.pricePerYearString}/year</Text>
              </Text>
           </View>
-    
-        {/* Features *
+        )}
+       
         <View style={styles.featuresHeader}>
           <Text style={styles.headerTitle}>What you get</Text>
           <Text style={styles.headerFree}>Free</Text>
-          <Text style={styles.headerPlus}>Plus</Text>
+          <Text style={styles.headerPlus}>Premium</Text>
         </View>
 
         <View style={styles.featuresTable}>
@@ -253,20 +265,20 @@ export default function Paywall() {
               </View>
               <View style={styles.iconColumn}>
                 <Image 
-                  source={item.free ? require('../assets/icons8-checkmark-48.png') : require('../assets/icons8-lock-52 (1).png')}
+                  source={item.free ? require('../assets/icons8-checkmark-40.png') : require('../assets/icons8-lock-52 (1).png')}
                   style={styles.customIcon}
                 />
               </View>
               <View style={styles.iconColumn}>
                 <View style={styles.iconContainer}>
                   <Image 
-                    source={item.plus ? require('../assets/icons8-checkmark-48.png') : require('../assets/icons8-lock-52 (1).png')}
+                    source={item.plus ? require('../assets/icons8-checkmark-40.png') : require('../assets/icons8-lock-52 (1).png')}
                     style={styles.customIcon}
                   />
                   {item.plus && (
                     <SparkleContainer 
                       size={6}
-                      color="#6cc24a"
+                      color="#0db9fd"
                       starCount={5}
                       radius={22}
                     />
@@ -277,7 +289,8 @@ export default function Paywall() {
           ))}
         </View>
 
-        {/* Testimonials 
+        {/*
+        
         <Text style={styles.testimonialsTitle}>Success stories from our clients</Text>
         <FlatList
           data={testimonials}
@@ -307,8 +320,8 @@ export default function Paywall() {
           })}
           style={{ height: 200 }} 
         />
-        
-        {/* Trust Indicators 
+              
+    
         <View style={styles.trustRow}>
           <View style={styles.trustItem}>
             <Image source={require('../assets/images/average_rating.png')} style={styles.trustImage}/>
@@ -317,6 +330,7 @@ export default function Paywall() {
            <Image source={require('../assets/images/users_worldwide.png')} style={styles.trustImage}/>
           </View>
         </View>
+        */}
 
         <Text style={styles.disclaimer}>
         Your monthly subscription automatically renews for the same term unless cancelled at least 24 hours prior to the end of the current term. Cancel any time in the App Store at no additional cost; your subscription will then cease at the end of the current term.
@@ -335,7 +349,7 @@ export default function Paywall() {
           </TouchableOpacity>
         </View>
 
-        {/* CTA 
+ 
         <TouchableOpacity 
           style={[styles.ctaButton, (purchasing || loading) && styles.disabledButton]} 
           onPress={handlePurchase}
@@ -418,7 +432,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   highlight: {
-    color: "#6cc24a",
+    color: "#0db9fd",
     fontWeight: "700",
   },
   loadingContainer: {
@@ -431,23 +445,24 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   pricingCard: {
-    backgroundColor: "#eafbea",
-    outlineColor: "#6cc24a",
+    backgroundColor: "rgba(13, 185, 253, 0.2)",
+    outlineColor: "rgba(13, 185, 253, 0.6)",
     outlineWidth: 1,
     padding: 16,
     borderRadius: 16,
     marginVertical: 16,
   },
   badge: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#fff",
-    backgroundColor: "#6cc24a",
     alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
     marginBottom: 8,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#fff",
   },
   pricingRow: {
     flexDirection: "row",
@@ -472,13 +487,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   arrow: {
-    color: "#6cc24a",
+    color: "#0db9fd",
     fontSize: 14,
     fontWeight: "bold",
     marginHorizontal: 4,
   },
   newPrice: {
-    color: "#6cc24a",
+    color: "#0db9fd",
     fontSize: 12,
     fontWeight: "bold",
   },
@@ -506,7 +521,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     textAlign: "center",
-    color: '#6cc24a',
+    color: '#0db9fd',
   },
   featureIcons: {
     flexDirection: "row",
@@ -609,7 +624,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   ctaButton: {
-    backgroundColor: "#000",
+    backgroundColor: "#0db9fd",
     paddingVertical: 16,
     borderRadius: 32,
     alignItems: "center",
@@ -677,4 +692,3 @@ const styles = StyleSheet.create({
   },
 });
 
-*/

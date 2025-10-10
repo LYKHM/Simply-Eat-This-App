@@ -1,4 +1,4 @@
-/*
+
 import Purchases, { CustomerInfo, PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 
 export interface SubscriptionService {
@@ -17,7 +17,7 @@ class RevenueCatService implements SubscriptionService {
       const customerInfo = await Purchases.getCustomerInfo();
       console.log('customerInfo', customerInfo);
       console.log('customerInfo.entitlements.active[this.PRO_ENTITLEMENT]', customerInfo.entitlements.active[this.PRO_ENTITLEMENT]);
-      return customerInfo.entitlements.active[this.PRO_ENTITLEMENT] !== undefined;
+      return customerInfo.entitlements.active[this.PRO_ENTITLEMENT] !== undefined; // Is this the correct path?
     } catch (error) {
       console.error('Error checking subscription status:', error);
       return false;
@@ -84,7 +84,7 @@ export function useSubscription() {
     setIsSubscribed(status);
     setLoading(false);
   };
-  /*
+  
   useEffect(() => {
     checkStatus();
   }, []);
@@ -99,4 +99,4 @@ export function useSubscription() {
     refreshStatus,
   };
 }
-*/
+ 

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, {
   useSharedValue,
-  useAnimatedStyle,
+  useAnimatedStyle, 
   withRepeat,
   withTiming,
   withDelay,

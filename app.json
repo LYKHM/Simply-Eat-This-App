@@ -2,7 +2,7 @@
   "expo": {
     "name": "Simply Eat This",
     "slug": "SimplyEatThis",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/SET_icon.png",
     "scheme": "simplyeatthis",
@@ -50,7 +50,18 @@
         }
       ],
       "expo-tracking-transparency",
-      "react-native-fbsdk-next"
+      [
+       "react-native-fbsdk-next",
+        {
+          "appID": "1455555635542147",
+          "clientToken": "7b46977645f5c4c784fdd89765971492",
+          "displayName": "Simply Eat This",
+          "scheme": "fb1455555635542147",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -51,7 +51,8 @@ export default function RecipeResults() {
     const [error, setError] = useState<string | null>(null);
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
     console.log('Selected recipe:', selectedRecipe);
-    const [base64Image, setBase64Image] = useState<string | null>(null);
+    const [fridgeBase64Image, setFridgeBase64Image] = useState<string | null>(null);
+    const [pantryBase64Image, setPantryBase64Image] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(0));
     const [diet, setDiet] = useState<string>('');
@@ -60,40 +61,44 @@ export default function RecipeResults() {
   
     
 
-// Convert the image to base64
+// Convert the images to base64
     useEffect(() => {
         const convertToBase64 = async () => {
-          if (params.photo) {
+          if (params.fridgePhoto && params.pantryPhoto) {
             try {
               setLoading(true);
               
-              
-              const base64 = await FileSystem.readAsStringAsync(params.photo as string, {
+              const fridgeBase64 = await FileSystem.readAsStringAsync(params.fridgePhoto as string, {
                 encoding: FileSystem.EncodingType.Base64,
               });
-              setBase64Image(base64);
+              setFridgeBase64Image(fridgeBase64);
+              
+              const pantryBase64 = await FileSystem.readAsStringAsync(params.pantryPhoto as string, {
+                encoding: FileSystem.EncodingType.Base64,
+              });
+              setPantryBase64Image(pantryBase64);
             
               setLoading(false);
             } catch (err) {
-              console.error("Error converting file:", err);
+              console.error("Error converting files:", err);
               setLoading(false);
             }
           }
         };
     
         convertToBase64();
-      }, [params.photo]);
+      }, [params.fridgePhoto, params.pantryPhoto]);
 
-// Take the base64 image and send it to the backend with all filter parameters
+// Take the base64 images and send them to the backend with all filter parameters
     useEffect(() => {
-        if (!base64Image) return;
+        if (!fridgeBase64Image || !pantryBase64Image) return;
 
         const fetchRecipes = async () => {
           try {
             setLoading(true);
             setError(null);
             
-            if (!base64Image) {
+            if (!fridgeBase64Image || !pantryBase64Image) {
               setError('No photo data received');
               setLoading(false);
               return;
@@ -126,7 +131,8 @@ export default function RecipeResults() {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                photo: base64Image,
+                fridgePhoto: fridgeBase64Image,
+                pantryPhoto: pantryBase64Image,
                 diet: filterParams.diet,
                 calories: calories, 
                 category: filterParams.category,
@@ -182,7 +188,7 @@ export default function RecipeResults() {
         };
     
         fetchRecipes();
-      }, [base64Image]);
+      }, [fridgeBase64Image, pantryBase64Image]);
  
 
       const handleBack = () => {

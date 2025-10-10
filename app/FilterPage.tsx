@@ -8,6 +8,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 type DietType = 'high-protein' | 'low-carb' | 'keto' | 'paleo' | 'vegan' | 'vegetarian' | 'mediterranean' | 'anything';
 type TimeRange = '5-10' | '10-15' | '15-20' | '20-25' | '25-30';
 type CalorieRange = '<100' | '200-400' | '400-600' | '600-800' | '800-1000' | '1000+';
+type CategoryType = 'meals' | 'snacks' | 'desserts';
 
 interface FilterState {
   diet: DietType;
@@ -16,8 +17,9 @@ interface FilterState {
   timeRange: TimeRange;
   slowCooker: boolean;
   excludedFoods: string[];
+  category: CategoryType;
 }
-
+ 
 const FilterPage = () => {
   const [filters, setFilters] = useState<FilterState>({
     diet: 'anything',
@@ -25,7 +27,8 @@ const FilterPage = () => {
     calorieRange: '400-600',
     timeRange: '15-20',
     slowCooker: false,
-    excludedFoods: []
+    excludedFoods: [],
+    category: 'meals'
   });
   //console.log('Filters:', filters);
 
@@ -70,6 +73,12 @@ const FilterPage = () => {
     { value: 5, label: '5+ people', icon: 'people' },
   ];
 
+  const categoryOptions: { value: CategoryType; label: string; icon: string }[] = [
+    { value: 'meals', label: 'Meals', icon: 'restaurant' },
+    { value: 'snacks', label: 'Snacks', icon: 'nutrition' },
+    { value: 'desserts', label: 'Desserts', icon: 'ice-cream' },
+  ];
+
   const handleDietSelect = (diet: DietType) => {
     setFilters(prev => ({ ...prev, diet }));
   };
@@ -84,6 +93,10 @@ const FilterPage = () => {
 
   const handleFamilyMemberSelect = (familyMembers: number) => {
     setFilters(prev => ({ ...prev, familyMembers }));
+  };
+
+  const handleCategorySelect = (category: CategoryType) => {
+    setFilters(prev => ({ ...prev, category }));
   };
 
   const toggleExcludedFood = (food: string) => {
@@ -106,6 +119,7 @@ const FilterPage = () => {
         timeRange: filters.timeRange,
         slowCooker: filters.slowCooker.toString(),
         excludedFoods: JSON.stringify(filters.excludedFoods),
+        category: filters.category,
       }
     });
   };
@@ -143,6 +157,36 @@ const FilterPage = () => {
                   <Text style={[
                     styles.optionTextCentered,
                     filters.diet === option.value && styles.selectedText
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Category Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Recipe Category</Text>
+            <View style={styles.horizontalOptions}>
+              {categoryOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.horizontalOption,
+                    filters.category === option.value && styles.selectedHorizontal
+                  ]}
+                  onPress={() => handleCategorySelect(option.value)}
+                >
+                  <Ionicons 
+                    name={option.icon as any} 
+                    size={16} 
+                    color={filters.category === option.value ? '#0d6efd' : '#6c757d'} 
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={[
+                    styles.horizontalOptionText,
+                    filters.category === option.value && styles.selectedHorizontalText
                   ]}>
                     {option.label}
                   </Text>

@@ -7,7 +7,7 @@ interface TestimonialCardProps {
   achievement: string;
   quote: string;
   avatarUri: string;
-}
+} 
 
 const TestimonialCard: React.FC<TestimonialCardProps> = ({
   name,
